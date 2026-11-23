@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Version>2.0.1</Version>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ServiceWorkerRegisterNoCache>true</ServiceWorkerRegisterNoCache>
+    <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
+    <RootNamespace>InspiredCodes.RemotePulse.App</RootNamespace>
+    <AssemblyName>RemotePulse.App</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.11" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.11" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\inspired.codes.RemotePulse.Shared.Contracts\inspired.codes.RemotePulse.Shared.Contracts.csproj" />
+    <ProjectReference Include="..\..\Shared\inspired.codes.RemotePulse.Shared.Cryptography\inspired.codes.RemotePulse.Shared.Cryptography.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- One service worker for every environment. It owns its own caching logic and does not
+         use Blazor's generated asset manifest, so there is no separate published variant. -->
+    <ServiceWorker Include="wwwroot\service-worker.js" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Sent verbatim by the "Update Worker" button (see Services/WorkerSelfUpdate.cs). Compiled
+         in rather than served from wwwroot, so it ships inside the App build like any other code. -->
+    <EmbeddedResource Include="Scripts\Update-RemotePulseWorker.ps1" LogicalName="RemotePulse.App.Update-RemotePulseWorker.ps1" />
+  </ItemGroup>
+
+</Project>

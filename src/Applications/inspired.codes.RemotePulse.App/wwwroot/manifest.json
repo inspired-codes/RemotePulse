@@ -1,0 +1,31 @@
+{
+  "short_name": "RemotePulse",
+  "name": "RemotePulse Mobile Client",
+  "icons": [
+    {
+      "src": "icons/icon-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    }
+  ],
+  "id": "/app",
+  "start_url": "/app",
+  "scope": "/",
+  "background_color": "#0f172a",
+  "theme_color": "#38bdf8",
+  "display": "standalone",
+  "orientation": "portrait"
+}

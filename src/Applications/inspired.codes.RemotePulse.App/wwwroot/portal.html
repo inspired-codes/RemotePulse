@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en" class="theme-dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RemotePulse — Zero-Trust Remote Execution &amp; Fleet Management</title>
+  <meta name="color-scheme" content="light dark" />
+
+  <!-- Favicons & Brand Icons -->
+  <link rel="icon" type="image/x-icon" href="/icons/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/icons/icon-master.svg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180x180.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png" />
+
+  <!-- Google Fonts: Outfit & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Decoupled Modular Stylesheets -->
+  <link rel="stylesheet" href="/portal/css/tokens.css" />
+  <link rel="stylesheet" href="/portal/css/components.css" />
+  <link rel="stylesheet" href="/portal/css/layout.css" />
+
+  <!-- Synchronous inline theme check to prevent Flash of Unstyled Content (FOUC) -->
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('rp_theme_preference');
+        var theme = /^(light|dark|high-contrast)$/.test(stored)
+          ? stored
+          : (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+        document.documentElement.className = 'theme-' + theme;
+      } catch (e) {}
+    })();
+  </script>
+</head>
+<body>
+
+  <!-- ========================================================================
+       1. Top Announcement Banner
+       ======================================================================== -->
+  <div class="announcement-banner" id="announcementBanner" role="banner" style="display: none;">
+    <div class="announcement-inner">
+      <span class="announcement-badge">New</span>
+      <span class="announcement-text" id="announcementText"></span>
+      <a href="#install" class="announcement-link" id="announcementLink">Get Worker &rarr;</a>
+      <button class="announcement-close" id="announcementCloseBtn" aria-label="Dismiss banner">&times;</button>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       2. Sticky Navigation Header
+       ======================================================================== -->
+  <nav class="navbar" role="navigation">
+    <div class="container nav-inner">
+      <a href="/" class="brand-group">
+        <img src="/icons/icon-master.svg" alt="RemotePulse Logo" class="brand-logo" width="36" height="36" />
+        <span class="brand-name">RemotePulse</span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="#install" class="nav-link">Quick Start</a></li>
+        <li><a href="#architecture" class="nav-link">Security Matrix</a></li>
+        <li><a href="/security" class="nav-link">Security &amp; Trust</a></li>
+        <li><a href="#support" class="nav-link">Send Feedback</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <!-- Relay Status Badge -->
+        <div class="badge-status">
+          <span class="badge-dot"></span>
+          <span id="hubStatusText">Relay Active</span>
+        </div>
+
+        <!-- Theme Selector Dropdown (Learn Style) -->
+        <div class="theme-selector">
+          <button id="themeDropdownBtn" class="theme-btn" aria-haspopup="true" aria-label="Change theme">
+            <span>🎨</span>
+            <span id="currentThemeLabel">Theme</span>
+            <span style="font-size: 10px;">▼</span>
+          </button>
+          <div id="themeDropdownMenu" class="theme-menu" role="menu">
+            <button class="theme-option" data-theme="light" role="menuitem">☀️ Light</button>
+            <button class="theme-option active" data-theme="dark" role="menuitem">🌙 Dark</button>
+            <button class="theme-option" data-theme="high-contrast" role="menuitem">🔲 High Contrast</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ========================================================================
+       3. Main Content
+       ======================================================================== -->
+  <main class="container">
+
+    <!-- Hero Section (Passes the 3-Second Test) -->
+    <section class="hero-section">
+
+      <h1 class="hero-title">
+        Your phone is the remote control.<br />
+        <span class="hero-title-accent">For all your computers &amp; servers.</span>
+      </h1>
+
+      <p class="hero-subtitle">
+        Script PowerShell on mobile, execute anywhere. Built with a <strong>Zero-Trust architecture</strong> &mdash; end-to-end encrypted, zero open inbound ports, and mathematically locked to your private key.
+      </p>
+
+      <!-- 3-Node Visual Flow Diagram -->
+      <div class="hero-flow" role="region" aria-label="How RemotePulse Works">
+        <!-- Node 1: Mobile Phone -->
+        <div class="flow-step">
+          <div class="flow-step-header">
+            <span class="flow-step-icon">📱</span>
+            <span class="flow-step-badge">Step 1</span>
+          </div>
+          <div class="flow-step-title">Mobile Phone (PWA)</div>
+          <div class="flow-step-subtitle">Script on Mobile</div>
+          <p class="flow-step-desc">
+            Pick or write scripts in your phone's browser. Digitally signed directly on your device with your private key.
+          </p>
+        </div>
+
+        <!-- Connector 1 -->
+        <div class="flow-connector" aria-hidden="true">
+          <span class="flow-connector-label">🔒 Encrypted</span>
+          <!-- Desktop Horizontal Arrow -->
+          <svg class="flow-arrow-horizontal" viewBox="0 0 84 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 12H74M74 12L60 4M74 12L60 20" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <!-- Mobile Vertical Downward Arrow -->
+          <svg class="flow-arrow-vertical" viewBox="0 0 24 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2V30M12 30L4 20M12 30L20 20" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+
+        <!-- Node 2: Zero-Trust Relay -->
+        <div class="flow-step">
+          <div class="flow-step-header">
+            <span class="flow-step-icon">☁️</span>
+            <span class="flow-step-badge">Step 2</span>
+          </div>
+          <div class="flow-step-title">Zero-Trust Cloud Hub</div>
+          <div class="flow-step-subtitle">Blind Relay</div>
+          <p class="flow-step-desc">
+            Transmits encrypted payloads across NAT and firewalls. The server cannot read or modify commands.
+          </p>
+        </div>
+
+        <!-- Connector 2 -->
+        <div class="flow-connector" aria-hidden="true">
+          <span class="flow-connector-label">⚡ Execute</span>
+          <!-- Desktop Horizontal Arrow -->
+          <svg class="flow-arrow-horizontal" viewBox="0 0 84 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M4 12H74M74 12L60 4M74 12L60 20" stroke="currentColor" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <!-- Mobile Vertical Downward Arrow -->
+          <svg class="flow-arrow-vertical" viewBox="0 0 24 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2V30M12 30L4 20M12 30L20 20" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+
+        <!-- Node 3: Host -->
+        <div class="flow-step">
+          <div class="flow-step-header">
+            <span class="flow-step-icon">💻</span>
+            <span class="flow-step-badge">Step 3</span>
+          </div>
+          <div class="flow-step-title">Host</div>
+          <div class="flow-step-subtitle">Execute Anywhere</div>
+          <p class="flow-step-desc">
+            Your background worker verifies your cryptographic signature, runs the script locally, and returns execution results.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Popular Resources / Architecture Grid (3-Column Style) -->
+    <section class="section" id="architecture">
+      <div class="section-header">
+        <h2 class="section-title">Core Capabilities &amp; Architecture</h2>
+        <p class="section-subtitle">Engineered for cryptographic security, resilience, and zero open inbound ports.</p>
+      </div>
+
+      <div class="grid-3">
+        <!-- Card 1: Zero-Trust Security -->
+        <article class="resource-card" id="security">
+          <div class="resource-card-header">
+            <h3 class="resource-card-title">Cryptographic Matrix</h3>
+            <p class="resource-card-desc">End-to-end ECDSA P-256 verification, replay protection, and hardware-backed keys.</p>
+          </div>
+          <ul class="resource-list">
+            <li class="resource-item">
+              <div class="resource-icon-wrap">🛡️</div>
+              <a href="#security">SEC-1 to SEC-10 Protocol</a>
+            </li>
+            <li class="resource-item">
+              <div class="resource-icon-wrap">🔑</div>
+              <a href="#security">Ephemeral Co-Presence Secrets</a>
+            </li>
+            <li class="resource-item">
+              <div class="resource-icon-wrap">🔒</div>
+              <a href="#security">Zero Server-Side Decryption</a>
+            </li>
+          </ul>
+          <div class="resource-card-footer">
+            <a href="/security">Read Security &amp; Trust Architecture &rarr;</a>
+          </div>
+        </article>
+
+        <!-- Card 2: Edge Worker Engine -->
+        <article class="resource-card">
+          <div class="resource-card-header">
+            <h3 class="resource-card-title">Cross-Platform Worker</h3>
+            <p class="resource-card-desc">Autonomous background daemon supporting Windows Services and systemd units.</p>
+          </div>
+          <ul class="resource-list">
+            <li class="resource-item">
+              <div class="resource-icon-wrap">⚙️</div>
+              <a href="#install">Auto .NET 10 Prerequisite Engine</a>
+            </li>
+            <li class="resource-item">
+              <div class="resource-icon-wrap">📱</div>
+              <a href="#install">Local Onboarding UI (Port 7923)</a>
+            </li>
+            <li class="resource-item">
+              <div class="resource-icon-wrap">📊</div>
+              <a href="#support">Fleet Telemetry &amp; Error Reporting</a>
+            </li>
+          </ul>
+          <div class="resource-card-footer">
+            <a href="#install">Read Worker Documentation &rarr;</a>
+          </div>
+        </article>
+
+        <!-- Card 3: Progressive Web App -->
+        <article class="resource-card">
+          <div class="resource-card-header">
+            <h3 class="resource-card-title">Mobile Command PWA</h3>
+            <p class="resource-card-desc">Zero-install mobile console running directly in any modern mobile browser.</p>
+          </div>
+          <ul class="resource-list">
+            <li class="resource-item">
+              <div class="resource-icon-wrap"><img src="/icons/icon-192x192.png" alt="PWA Icon" width="22" height="22" style="border-radius: 4px; display: block;" /></div>
+              <a href="/app">Installable Web App (PWA)</a>
+            </li>
+            <li class="resource-item">
+              <div class="resource-icon-wrap">📸</div>
+              <a href="/app">Camera QR-Code Scanner</a>
+            </li>
+            <li class="resource-item">
+              <div class="resource-icon-wrap">💻</div>
+              <a href="/app">Live Command Result Viewer</a>
+            </li>
+          </ul>
+          <div class="resource-card-footer">
+            <a href="/app">Launch Web Application &rarr;</a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- Spotlight Callout Section (LAN Deployment) -->
+    <section class="section" id="install" style="padding-top: 10px;">
+      <div class="spotlight-card">
+        <div class="spotlight-header">
+          <h2 class="spotlight-title">Ready to deploy across your LAN?</h2>
+          <p class="spotlight-desc">
+            Run our non-interactive installer on your Windows and Linux nodes. The worker handles service registration, firewall negotiation, and secure credential storage automatically.
+          </p>
+          <p style="font-size: 13.5px; font-weight: 700; color: var(--text-primary); margin-bottom: 0;">
+            Install worker and connect your host in under 30 seconds:
+          </p>
+        </div>
+
+        <!-- Box 1: Interactive Terminal Snippet & Manual Downloads -->
+        <div class="terminal-box">
+          <div class="terminal-header">
+            <div class="terminal-dots">
+              <span class="terminal-dot"></span>
+              <span class="terminal-dot"></span>
+              <span class="terminal-dot"></span>
+            </div>
+            <div class="terminal-tabs">
+              <button class="terminal-tab active" data-os="powershell">PowerShell (Windows)</button>
+              <button class="terminal-tab" data-os="bash">Linux (Bash)</button>
+              <button class="terminal-tab" data-os="manual">Manual (Zip)</button>
+            </div>
+          </div>
+
+          <div class="terminal-body">
+            <!-- Code Snippet View (PowerShell / Bash) -->
+            <div id="terminalCodeView" class="terminal-code-view">
+              <div class="terminal-code-group">
+                <span class="terminal-prompt" id="terminalPrompt">PS &gt;</span>
+                <code id="terminalSnippet">irm https://psrun.inspired.codes/get-worker.ps1 | iex</code>
+              </div>
+              <button id="terminalCopyBtn" class="btn-copy">Copy</button>
+            </div>
+
+            <!-- Manual Zip Download Cards View -->
+            <div id="terminalDownloadView" class="terminal-download-view" style="display: none;">
+              <a href="/downloads/RemotePulse-Worker-windows-x64.zip" class="dl-badge-btn" download>
+                <span>🪟 Windows (x64 .zip)</span>
+                <span class="dl-subtext" id="dlShaWindows">SHA-256: 2ecfd4589e029ef695079826395d12b4457a1fab49e936cb9f999f52892f234f</span>
+              </a>
+              <a href="/downloads/RemotePulse-Worker-linux-x64.zip" class="dl-badge-btn" download>
+                <span>🐧 Linux (x64 .zip)</span>
+                <span class="dl-subtext" id="dlShaLinux">SHA-256: 8876fde6c99292a1380c175b5538d92c1467300ffa6c0f232fc3cc594d901c58</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Box 2: Prerequisites & Embedded Engine Architecture Callout -->
+        <div class="spotlight-prereq-note">
+          <div class="prereq-item">
+            <span class="prereq-icon">ℹ️</span>
+            <div class="prereq-text">
+              <strong>Prerequisites &amp; Engine:</strong> Requires <strong>.NET 10</strong> (the bootstrap installer automatically checks and prompts to install it if missing). <em>PowerShell CLI is not required at runtime</em> &mdash; RemotePulse Worker embeds its own internal PowerShell 7.6 execution engine.
+            </div>
+          </div>
+        </div>
+
+        <!-- Box 3: What Happens Next & Uninstallation Instructions -->
+        <div class="spotlight-prereq-note">
+          <div class="prereq-item">
+            <span class="prereq-icon">▶️</span>
+            <div class="prereq-text">
+              <strong>What happens next:</strong> the script downloads the Worker for your OS, verifies its SHA-256, and installs it as a background service (asking for admin rights). Your browser then opens <code>http://localhost:7923/</code> with a pairing QR code &mdash; scan it with the RemotePulse app on your phone (this site&rsquo;s <code>/app</code> page) and the machine is paired. To update later, run the same command again; your pairing is kept.
+            </div>
+          </div>
+          <div class="prereq-item" style="margin-top: 10px;">
+            <span class="prereq-icon">🗑️</span>
+            <div class="prereq-text">
+              <strong>Uninstall:</strong> download the zip for your OS from the <strong>Manual (Zip)</strong> tab, extract it, and run <code>Uninstaller.ps1</code> as admin (Linux: <code>sudo pwsh ./Uninstaller.ps1</code>). It removes the service and files, and asks whether to keep your pairing keys.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Support & Feedback Section -->
+    <section class="section" id="support" style="padding-top: 10px; padding-bottom: 40px;">
+      <div class="section-header">
+        <h2 class="section-title">Report an Issue or Feedback</h2>
+        <p class="section-subtitle">Got a bug, an installation issue, or just feedback for the team? Tell us &mdash; it goes straight to the Hub.</p>
+      </div>
+
+      <div class="support-card">
+        <form id="supportReportForm">
+          <div style="margin-bottom: 18px;">
+            <label for="reportMessage" class="form-label">
+              Your Message <span style="color: #f87171;">*</span>
+            </label>
+            <textarea id="reportMessage" class="form-textarea" required rows="4" maxlength="4000" placeholder="What's going on? A bug, an installation issue, or just feedback &mdash; e.g. 'Windows installer failed at step Validate environment with exit code X'..."></textarea>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin-bottom: 22px;">
+            <div>
+              <label for="reportMachineId" class="form-label">Machine ID (Optional)</label>
+              <input type="text" id="reportMachineId" class="form-input form-input-mono" maxlength="64" placeholder="e.g. 193d9bbf..." />
+            </div>
+            <div>
+              <label for="reportContact" class="form-label">Operator / Contact (Optional)</label>
+              <input type="text" id="reportContact" class="form-input" maxlength="100" placeholder="e.g. peter@example.com" />
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+            <div id="reportStatus" style="font-size: 13.5px; font-weight: 600; min-height: 20px;"></div>
+            <button type="submit" id="reportSubmitBtn" class="btn-primary" style="cursor: pointer; padding: 10px 24px;">
+              <span>🚀</span> Send
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========================================================================
+       4. Footer
+       ======================================================================== -->
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <img src="/icons/icon-master.svg" alt="RemotePulse Logo" width="22" height="22" style="border-radius: 4px; display: block;" />
+        <span>&copy; 2026 InspiredCodes RemotePulse. All rights reserved.</span>
+      </div>
+      <ul class="footer-links">
+        <li><a href="#install">Documentation</a></li>
+        <li><a href="/security">Security</a></li>
+        <li><a href="#support">Feedback</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <!-- ========================================================================
+       5. Decoupled JavaScript Entrypoint
+       ======================================================================== -->
+  <script type="module" src="/portal/js/main.js"></script>
+
+</body>
+</html>

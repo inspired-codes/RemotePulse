@@ -1,0 +1,129 @@
+@page "/scan"
+@inject IJSRuntime JS
+@inject AppState AppState
+@inject NavigationManager Nav
+@implements IDisposable
+
+<div class="panel" style="margin-top: 8px;">
+    <div class="panel-title">Pair with Worker / Client PC</div>
+    <p style="font-size: 12.5px; color: var(--text-muted); margin: 0 0 14px 0;">Scan the pairing QR code displayed on the RemotePulse Worker's local onboarding page (<code>http://localhost:7923</code>).</p>
+    @if (!AppState.CanPairNewClient)
+    {
+        <div style="background: var(--warning-bg); border: 1px solid var(--warning-color); border-radius: var(--radius-md); padding: 10px 12px; margin-bottom: 14px;">
+            <p style="font-size: 12px; color: var(--text-color); margin: 0;">This device already has @AppState.PairedClients.Count/@AppState.MaxPairedClients paired workers. Scanning still works and re-pairing an existing worker is unaffected, but pairing a new one will ask you to remove one afterward.</p>
+        </div>
+    }
+    <div id="reader" style="margin-bottom: 14px;">
+        <div class="scanner-placeholder" style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 24px;">
+            Camera scanner inactive.<br>Tap "Start Scanner" to begin.
+        </div>
+    </div>
+    @if (!isScannerActive)
+    {
+        <p style="font-size: 11.5px; color: var(--text-muted); margin: 0 0 12px 0;">Your browser will request camera access when you start the scanner.</p>
+    }
+    <div style="display: flex; gap: 10px;">
+        <button style="flex: 1;" @onclick="StartScannerAsync" disabled="@isScannerActive">
+            @(isScannerActive ? "Scanning..." : "Start Scanner")
+        </button>
+        <button class="secondary-btn" style="flex: 1;" @onclick="StopScannerAsync" disabled="@(!isScannerActive)">
+            Stop Scanner
+        </button>
+    </div>
+    @if (!string.IsNullOrEmpty(statusMessage))
+    {
+        <p style="font-size: 12.5px; color: var(--warning-color); margin: 12px 0 0 0;">@statusMessage</p>
+    }
+    <button class="secondary-btn" style="width: 100%; margin-top: 12px;" @onclick="GoBack">Back to Console</button>
+</div>
+
+@code {
+    private bool isScannerActive = false;
+    private string? statusMessage;
+    private DotNetObjectReference<Scan>? dotNetHelper;
+
+    protected override void OnInitialized()
+    {
+        dotNetHelper = DotNetObjectReference.Create(this);
+    }
+
+    private async Task StartScannerAsync()
+    {
+        try
+        {
+            statusMessage = null;
+            isScannerActive = true;
+            StateHasChanged();
+            await JS.InvokeVoidAsync("qrScannerInterop.startScanner", dotNetHelper);
+        }
+        catch (Exception ex)
+        {
+            AppState.Log($"Scanner error: {ex.Message}");
+            statusMessage = $"Couldn't start the camera: {ex.Message}";
+            isScannerActive = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task StopScannerAsync()
+    {
+        isScannerActive = false;
+        await JS.InvokeVoidAsync("qrScannerInterop.stopScanner");
+        StateHasChanged();
+    }
+
+    [JSInvokable]
+    public async Task OnScanSuccess(string decodedText)
+    {
+        AppState.Log("QR Code scanned successfully.");
+        await StopScannerAsync();
+
+        string? targetRoute = GetNavigationTargetForScannedLink(decodedText);
+        if (targetRoute != null)
+        {
+            Nav.NavigateTo(targetRoute);
+        }
+        else
+        {
+            AppState.Log("Scanned code isn't a RemotePulse pairing link.");
+        }
+    }
+
+    /// <summary>
+    /// Resolves the in-app navigation target for a decoded QR pairing link:
+    /// <c>/pairing/v2#{fragment}</c> for Version 2, <c>/pairing/v1#{fragment}</c> for Version 1
+    /// (which shows the "update the Worker" message without sending anything), or <c>null</c>
+    /// if the text is not a valid pairing link.
+    /// </summary>
+    public static string? GetNavigationTargetForScannedLink(string? decodedText)
+    {
+        if (string.IsNullOrWhiteSpace(decodedText)) return null;
+        int hashIndex = decodedText.IndexOf('#');
+        if (hashIndex < 0 || !PairingLinkParser.TryParse(decodedText, out var parsed))
+        {
+            return null;
+        }
+
+        string route = parsed.Version == 2 ? "/pairing/v2" : "/pairing/v1";
+        return $"{route}#{decodedText[(hashIndex + 1)..]}";
+    }
+
+    [JSInvokable]
+    public void OnScannerTimeout()
+    {
+        isScannerActive = false;
+        statusMessage = "Scanner stopped after 30 seconds of inactivity. Tap \"Start Scanner\" to try again.";
+        AppState.Log("Scanner auto-stopped after 30 seconds idle.");
+        StateHasChanged();
+    }
+
+    private void GoBack()
+    {
+        Nav.NavigateTo("/");
+    }
+
+    public void Dispose()
+    {
+        dotNetHelper?.Dispose();
+    }
+}

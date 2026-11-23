@@ -1,0 +1,254 @@
+@page "/pairing/v2"
+@page "/pairing/v1"
+@using InspiredCodes.RemotePulse.Shared.Cryptography
+@inject IJSRuntime JS
+@inject AppState AppState
+@inject HubApiClient HubApi
+@inject NavigationManager Nav
+@implements IDisposable
+
+<div class="panel" style="text-align: center; margin-top: 8px;">
+    <div class="panel-title" style="justify-content: center; font-size: 17px; margin-bottom: 16px;">Pairing Verification</div>
+
+    @if (state == PairingState.Working)
+    {
+        <div style="padding: 24px 0;">
+            <p style="font-size: 14px; color: var(--accent-color); font-weight: 600;">Submitting key-bound pairing request to the Hub...</p>
+            <p style="font-size: 12px; color: var(--text-muted);">Establishing cryptographic trust with Worker</p>
+        </div>
+    }
+    else if (state == PairingState.Success)
+    {
+        <div style="background: var(--success-bg); border: 1px solid var(--success-color); border-radius: var(--radius-md); padding: 14px; margin-bottom: 16px;">
+            <p style="font-size: 14px; font-weight: 700; color: var(--success-color); margin: 0 0 4px 0;">✓ Paired Successfully!</p>
+            <p style="font-size: 12.5px; color: var(--text-color); margin: 0;">This device can now securely dispatch commands to the paired Worker.</p>
+        </div>
+        @if (!string.IsNullOrEmpty(safetyCode))
+        {
+            <div style="background: var(--card-bg-subtle); border: 1px solid var(--panel-border); border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 16px;">
+                <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--accent-color); margin-bottom: 4px;">Safety Code (SAS)</div>
+                <div style="font-size: 22px; font-weight: 800; font-family: monospace; letter-spacing: 0.12em; color: var(--text-color); margin-bottom: 4px;">@safetyCode</div>
+                <div style="font-size: 11.5px; color: var(--text-muted);">Compare this 6-digit code with the Worker status page on your PC screen.</div>
+            </div>
+        }
+        @if (IsOverLimit)
+        {
+            <div style="background: var(--warning-bg); border: 1px solid var(--warning-color); border-radius: var(--radius-md); padding: 14px; margin-bottom: 14px; text-align: left;">
+                <p style="font-size: 13px; font-weight: 700; color: var(--warning-color); margin: 0 0 4px 0;">@AppState.PairedClients.Count paired workers - over this device's limit of @AppState.MaxPairedClients</p>
+                <p style="font-size: 12px; color: var(--text-color); margin: 0;">The pairing above is real and saved. Choose one to remove so this device is back within its limit:</p>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px; text-align: left;">
+                @foreach (var pairedClient in AppState.PairedClients)
+                {
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--input-border); border-radius: var(--radius-sm);">
+                        <span style="font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            @(string.IsNullOrEmpty(pairedClient.Alias) ? pairedClient.MachineId : pairedClient.Alias)
+                            @(pairedClient.MachineId == AppState.ActiveClient?.MachineId ? " (just added)" : "")
+                        </span>
+                        <button class="secondary-btn btn-small btn-danger" style="flex-shrink: 0;" @onclick="() => RemoveOverflowClientAsync(pairedClient.MachineId)">Remove</button>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="form-group" style="text-align: left; margin-top: 14px;">
+                <label for="aliasInput">Give this machine a friendly name</label>
+                <input type="text" id="aliasInput" @bind="aliasInput" placeholder="e.g. My Laptop, Linux Server">
+            </div>
+            <button style="width: 100%; margin-top: 8px;" @onclick="SaveAliasAndGoHome">Save &amp; Go to Console</button>
+        }
+    }
+    else if (state == PairingState.Expired)
+    {
+        <div style="background: var(--warning-bg); border: 1px solid var(--warning-color); border-radius: var(--radius-md); padding: 14px; margin-bottom: 16px;">
+            <p style="font-size: 14px; font-weight: 700; color: var(--warning-color); margin: 0 0 4px 0;">Pairing Link Expired</p>
+            <p style="font-size: 12.5px; color: var(--text-color); margin: 0;">This pairing link has expired (it's only valid for a short window). Return to the Worker's onboarding page and scan the refreshed QR code.</p>
+        </div>
+        <button class="secondary-btn" style="width: 100%;" @onclick="GoHome">Go to Console</button>
+    }
+    else if (state == PairingState.Failed)
+    {
+        <div style="background: var(--danger-bg); border: 1px solid var(--danger-color); border-radius: var(--radius-md); padding: 14px; margin-bottom: 16px;">
+            <p style="font-size: 14px; font-weight: 700; color: var(--danger-color); margin: 0 0 4px 0;">Pairing Failed</p>
+            <p style="font-size: 12.5px; color: var(--danger-color); margin: 0;">@errorMessage</p>
+        </div>
+        <button class="secondary-btn" style="width: 100%;" @onclick="GoHome">Go to Console</button>
+    }
+    else
+    {
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">No pairing link found in this address. Scan the QR code shown on the Worker's onboarding page.</p>
+        <button class="secondary-btn" style="width: 100%;" @onclick="GoHome">Go to Console</button>
+    }
+</div>
+
+@if (state != PairingState.Loading && !string.IsNullOrEmpty(AppState.ConsoleOutput))
+{
+    <div class="panel">
+        <div class="panel-title" style="justify-content: space-between; align-items: center;">
+            <span>Pairing Log</span>
+            <button class="secondary-btn btn-small" style="padding: 4px 12px; min-height: 32px;" @onclick="CopyLogAsync">
+                @copyBtnText
+            </button>
+        </div>
+        <p style="font-size: 11.5px; color: var(--text-muted); margin: 0 0 8px 0;">Can't send this to the Hub yet - this device isn't paired. Copy it here to share with support instead.</p>
+        <div class="console-output-wrapper">
+            <div class="console-output">@AppState.ConsoleOutput</div>
+        </div>
+    </div>
+}
+
+@code {
+    public const string OldWorkerUpdateMessage = "This PC runs an old RemotePulse Worker. Update it with the install command, then pair again.";
+    public const string FingerprintMismatchErrorMessage = "The server returned a different key for this PC than its QR code. Pairing was stopped.";
+
+    private enum PairingState { Loading, Working, Success, Expired, Failed, NoLink }
+
+    private PairingState state = PairingState.Loading;
+    private string errorMessage = string.Empty;
+    private string safetyCode = string.Empty;
+    private string aliasInput = string.Empty;
+    private string copyBtnText = "Copy";
+
+    /// <summary>How stale a scanned link can be before we reject it client-side without even
+    /// calling the Hub. Matches the on-demand 90s QR code plus a 30s grace window for clock
+    /// skew (see Program.cs CoPresenceValiditySeconds).</summary>
+    private static readonly TimeSpan MaxLinkAge = TimeSpan.FromSeconds(120);
+
+    protected override void OnInitialized()
+    {
+        AppState.OnStateChanged += StateHasChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        if (string.IsNullOrEmpty(AppState.AppId))
+        {
+            await AppState.InitializeAsync();
+        }
+
+        string hash;
+        try
+        {
+            hash = await JS.InvokeAsync<string>("qrScannerInterop.getLocationHash");
+        }
+        catch (Exception ex)
+        {
+            AppState.Log($"Failed to read pairing link: {ex.Message}");
+            state = PairingState.NoLink;
+            StateHasChanged();
+            return;
+        }
+
+        // The current page's own URL (via NavigationManager) is the most reliable source of
+        // the Hub's origin - it's literally the address this page was loaded from.
+        string hubOrigin = new Uri(Nav.BaseUri).GetLeftPart(UriPartial.Authority);
+
+        if (!PairingLinkParser.TryParse(hash, out var link))
+        {
+            state = PairingState.NoLink;
+            StateHasChanged();
+            return;
+        }
+
+        if (link.Version == 1)
+        {
+            AppState.Log(OldWorkerUpdateMessage);
+            state = PairingState.Failed;
+            errorMessage = OldWorkerUpdateMessage;
+            StateHasChanged();
+            return;
+        }
+
+        if (DateTimeOffset.UtcNow - link.GeneratedAtUtc > MaxLinkAge)
+        {
+            AppState.Log("Pairing link is stale - rejecting before contacting the Hub.");
+            state = PairingState.Expired;
+            StateHasChanged();
+            return;
+        }
+
+        state = PairingState.Working;
+        StateHasChanged();
+
+        PairingSubmitResult submitResult = await HubApi.SubmitCoPresenceAsync(hubOrigin, link.Secret, link.WorkerFingerprint!, link.GeneratedAtUtc);
+        if (submitResult == PairingSubmitResult.FingerprintMismatch)
+        {
+            state = PairingState.Failed;
+            errorMessage = FingerprintMismatchErrorMessage;
+        }
+        else if (submitResult == PairingSubmitResult.Failed)
+        {
+            state = PairingState.Failed;
+            errorMessage = "Pairing failed. The link may have expired, or the Worker hasn't submitted its side yet - try scanning again.";
+        }
+        else
+        {
+            state = PairingState.Success;
+            errorMessage = string.Empty;
+            string? workerPublicKey = HubApi.LastPairedClientPublicKey ?? AppState.ActiveClient?.PublicKey;
+            safetyCode = !string.IsNullOrWhiteSpace(workerPublicKey) && !string.IsNullOrWhiteSpace(AppState.AppPublicKeyBase64)
+                ? PairingCrypto.ComputeSafetyCode(workerPublicKey, AppState.AppPublicKeyBase64)
+                : string.Empty;
+        }
+        aliasInput = AppState.ActiveClient?.Alias ?? string.Empty;
+        StateHasChanged();
+    }
+
+    /// <summary>True once a just-completed pairing pushed the paired count past the free-tier
+    /// limit - the Success view swaps its alias-naming step for a pick-one-to-remove list.</summary>
+    private bool IsOverLimit => AppState.PairedClients.Count > AppState.MaxPairedClients;
+
+    private async Task RemoveOverflowClientAsync(string machineId)
+    {
+        await AppState.UnpairClientAsync(machineId);
+
+        // Removing the one just paired (the common case - the operator decides to keep their
+        // existing 3) clears ActiveClient; fall back to whichever pairing remains so "Save & Go
+        // to Console" below still has a sensible target once we're back under the limit.
+        if (AppState.ActiveClient == null && AppState.PairedClients.Count > 0)
+        {
+            AppState.SelectActiveClient(AppState.PairedClients[0].MachineId);
+        }
+        aliasInput = AppState.ActiveClient?.Alias ?? string.Empty;
+        StateHasChanged();
+    }
+
+    private async Task SaveAliasAndGoHome()
+    {
+        if (AppState.ActiveClient != null && !string.IsNullOrWhiteSpace(aliasInput))
+        {
+            await AppState.RenameClientAsync(AppState.ActiveClient.MachineId, aliasInput);
+        }
+        GoHome();
+    }
+
+    private void GoHome()
+    {
+        Nav.NavigateTo("/");
+    }
+
+    private async Task CopyLogAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("navigator.clipboard.writeText", AppState.ConsoleOutput);
+            copyBtnText = "Copied!";
+        }
+        catch
+        {
+            copyBtnText = "Copy failed";
+        }
+        StateHasChanged();
+        await Task.Delay(1500);
+        copyBtnText = "Copy";
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        AppState.OnStateChanged -= StateHasChanged;
+    }
+}

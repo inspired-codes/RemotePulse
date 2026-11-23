@@ -1,0 +1,62 @@
+@inherits LayoutComponentBase
+@using System.Reflection
+@inject IJSRuntime JS
+@inject AppState AppState
+
+<header>
+    <div class="header-brand">
+        <div class="header-brand-row">
+            <img src="icons/icon-master.svg" alt="RemotePulse Logo" class="header-logo" width="38" height="38" />
+            <h1>RemotePulse</h1>
+        </div>
+        <p class="header-subtitle">Mobile Pairing &amp; Dispatch Console v@(AppVersion) (.NET 10 WASM)</p>
+    </div>
+    <button class="theme-toggle-btn" @onclick="ToggleThemeAsync" aria-label="Toggle Theme">
+        <span>@(AppState.Theme == "light" ? "☀️" : "🌙")</span>
+    </button>
+</header>
+
+@Body
+
+@code {
+    // The <Version> from the .csproj, without the "+<commit>" suffix the SDK appends.
+    private static readonly string AppVersion =
+        (typeof(MainLayout).Assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+            .InformationalVersion ?? "?").Split('+')[0];
+
+    protected override void OnInitialized()
+    {
+        AppState.OnStateChanged += StateHasChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            try
+            {
+                var theme = await JS.InvokeAsync<string>("qrScannerInterop.getTheme");
+                AppState.Theme = theme;
+                await JS.InvokeVoidAsync("qrScannerInterop.setTheme", theme);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"JS Interop theme error: {ex.Message}");
+            }
+        }
+    }
+
+    private async Task ToggleThemeAsync()
+    {
+        string nextTheme = AppState.Theme == "light" ? "dark" : "light";
+        AppState.Theme = nextTheme;
+        await JS.InvokeVoidAsync("qrScannerInterop.setTheme", nextTheme);
+        AppState.Log($"Theme switched to: {nextTheme}");
+    }
+
+    public void Dispose()
+    {
+        AppState.OnStateChanged -= StateHasChanged;
+    }
+}

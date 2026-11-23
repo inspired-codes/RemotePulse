@@ -1,0 +1,9 @@
+{
+  "version": "2.0.1",
+  "releasedAt": "2026-11-12T16:17:53Z",
+  "title": "RemotePulse Worker v2.0.1 Released",
+  "message": "Key-bound Pairing v2 (HKDF + HMAC-SHA256 + 6-digit SAS) + security package updates.",
+  "link": "#install",
+  "windowsSha256": "2ecfd4589e029ef695079826395d12b4457a1fab49e936cb9f999f52892f234f",
+  "linuxSha256": "8876fde6c99292a1380c175b5538d92c1467300ffa6c0f232fc3cc594d901c58"
+}

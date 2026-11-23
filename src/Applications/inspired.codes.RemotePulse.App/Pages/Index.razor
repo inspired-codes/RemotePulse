@@ -1,0 +1,672 @@
+@page "/app"
+@page "/"
+@*
+    Older installs launch at /index.html because that was the manifest's original start_url, and
+    an installed PWA keeps the cached manifest until the browser re-fetches it - so fixing
+    start_url alone does not rescue a phone that already has the app on its home screen. Keeping
+    this alias means those installs land on the main page immediately instead of on a dead end.
+*@
+@page "/index.html"
+@inject IJSRuntime JS
+@inject AppState AppState
+@inject HubApiClient HubApi
+@inject ClientWatchdog Watchdog
+@inject NavigationManager Nav
+@implements IDisposable
+
+@if (!isInstalled)
+{
+    <!-- PWA Install Screen -->
+    <div class="panel" style="text-align: center; margin-top: 8px;">
+        <div class="panel-title" style="justify-content: center; font-size: 17px; margin-bottom: 16px;">Installation Recommended</div>
+        <div style="width: 72px; height: 72px; margin: 0 auto 16px auto; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 24px rgba(56,189,248,0.3);">
+            <img src="icons/icon-192x192.png" alt="RemotePulse Logo" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+        <p style="font-size: 13.5px; line-height: 1.5; color: var(--text-color); margin-bottom: 18px;">For the most reliable key storage and home-screen access on your mobile device, install RemotePulse before pairing.</p>
+
+        <div style="text-align: left; background: var(--card-bg-subtle); padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--panel-border); margin-bottom: 18px;">
+            <div style="font-weight: 700; font-size: 12.5px; color: var(--accent-color); margin-bottom: 6px;">For Google Pixel &amp; Android (Chrome):</div>
+            <ol style="margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--text-muted); line-height: 1.7;">
+                <li>Tap the <strong>Menu</strong> button (<code>⋮</code>) in Chrome.</li>
+                <li>Select <strong>Install app</strong> or <strong>Add to Home screen</strong>.</li>
+            </ol>
+            <div style="font-weight: 700; font-size: 12.5px; color: var(--accent-purple); margin-top: 12px; margin-bottom: 6px;">For Apple iOS (Safari):</div>
+            <ol style="margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--text-muted); line-height: 1.7;">
+                <li>Tap the <strong>Share</strong> button (<code>⎋</code>) in Safari.</li>
+                <li>Select <strong>Add to Home Screen</strong>.</li>
+            </ol>
+        </div>
+
+        <p style="font-size: 11.5px; color: var(--text-muted); margin-bottom: 14px;">Already installed? Open the RemotePulse icon from your home screen.</p>
+        <button class="secondary-btn" style="width: 100%;" @onclick="BypassPwaAsync">Continue in Browser (Skip Install)</button>
+    </div>
+}
+else
+{
+    <main>
+        <!-- App Identity & Status Panel -->
+        <div class="panel">
+            <div class="panel-title">
+                Active Connection
+                <a href="/scan" style="text-decoration: none; margin-left: auto; flex-shrink: 0;" title="@(AppState.CanPairNewClient ? "" : $"At {AppState.PairedClients.Count}/{AppState.MaxPairedClients} paired workers - scanning still works, but you'll be asked to remove one afterward")">
+                    <button class="@(AppState.CanPairNewClient ? "btn-small" : "secondary-btn btn-small")" style="padding: 4px 12px; min-height: 32px; white-space: nowrap;">@(AppState.CanPairNewClient ? "Pair New Client" : $"Pair New Client ({AppState.PairedClients.Count}/{AppState.MaxPairedClients})")</button>
+                </a>
+            </div>
+
+            @* The chain row is the one place the active connection's state is shown; a status
+               badge only remains for the "nothing to show a chain for" case. *@
+            @if (AppState.ActiveClient == null)
+            {
+                <span class="status-badge disconnected">Not Paired</span>
+            }
+
+            @if (AppState.PairedClients.Count > 0 || !AppState.DeviceOnline)
+            {
+                <div class="conn-chain">
+                    <span class="conn-node"><span class="status-dot @AppNodeDot"></span>App</span>
+                    <span class="conn-link"></span>
+                    @if (string.IsNullOrEmpty(ActiveHubHost))
+                    {
+                        <span class="conn-node"><span class="status-dot @HubNodeDot"></span>Hub</span>
+                    }
+                    else
+                    {
+                        <span class="conn-node conn-node-sub" title="@AppState.ActiveClient?.ServerUrl">
+                            <span class="status-dot @HubNodeDot"></span>
+                            <span class="conn-node-label">Hub<span class="conn-node-detail">@ActiveHubHost</span></span>
+                        </span>
+                    }
+                    <span class="conn-link"></span>
+                    @if (string.IsNullOrEmpty(ActiveWorkerLastSeen))
+                    {
+                        <span class="conn-node"><span class="status-dot @WorkerNodeDot"></span>Worker</span>
+                    }
+                    else
+                    {
+                        <span class="conn-node conn-node-sub" title="@ActiveWorkerTooltip">
+                            <span class="status-dot @WorkerNodeDot"></span>
+                            <span class="conn-node-label">Worker<span class="conn-node-detail">@ActiveWorkerLastSeen</span></span>
+                        </span>
+                    }
+                </div>
+                @if (!string.IsNullOrEmpty(ChainCaption))
+                {
+                    <div class="conn-chain-caption">@ChainCaption</div>
+                }
+            }
+        </div>
+
+        <!-- Manage Clients Panel -->
+        <div class="panel">
+            <div class="panel-title">Paired Clients (@AppState.PairedClients.Count/@AppState.MaxPairedClients)</div>
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+                @if (AppState.PairedClients.Count == 0)
+                {
+                    <div style="font-size: 12px; color: var(--text-muted); text-align: center; padding: 14px 0;">
+                        No client computers paired yet. Tap "Pair New Client" above to scan a QR code, or visit <a href="/downloads" style="color: var(--accent-color); font-weight: 600; text-decoration: none;">Downloads &amp; Security</a> to install the Worker.
+                    </div>
+                }
+                else
+                {
+                    @foreach (var client in AppState.PairedClients)
+                    {
+                        bool isActive = AppState.ActiveClient?.MachineId == client.MachineId;
+                        bool isRenaming = renamingMachineId == client.MachineId;
+                        var clientStatus = AppState.GetClientStatus(client.MachineId);
+                        <div class="client-card @(isActive ? "active" : "")">
+                            @if (isRenaming)
+                            {
+                                <div class="client-rename-row">
+                                    <input type="text" @bind="renameInput" @bind:event="oninput" style="flex: 1; min-width: 120px; font-size: 13px;" placeholder="Machine alias" />
+                                    <button class="btn-small" @onclick="SaveRenameAsync">Save</button>
+                                    <button class="secondary-btn btn-small" @onclick="CancelRename">Cancel</button>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="client-card-inner" @onclick="() => SelectClient(client.MachineId)">
+                                    <div class="client-info">
+                                        <div class="client-name">
+                                            @if (isActive)
+                                            {
+                                                <span class="client-active-indicator">✓</span>
+                                            }
+                                            @(string.IsNullOrEmpty(client.Alias) ? client.MachineId : client.Alias)
+                                        </div>
+                                        <div class="client-status-text">
+                                            @StatusTooltip(clientStatus).TrimEnd('.')@(Models.ClientStatusDisplay.WorkerVersionText(clientStatus) is { Length: > 0 } versionText ? $" · {versionText}" : "")@(!string.IsNullOrWhiteSpace(client.PublicKey) && !string.IsNullOrWhiteSpace(AppState.AppPublicKeyBase64) ? $" · SAS {InspiredCodes.RemotePulse.Shared.Cryptography.PairingCrypto.ComputeSafetyCode(client.PublicKey, AppState.AppPublicKeyBase64)}" : "")
+                                        </div>
+                                    </div>
+                                    <div class="client-actions">
+                                        <span class="status-dot @DotClass(clientStatus)" title="@StatusTooltip(clientStatus)" aria-label="@BadgeText(clientStatus)"></span>
+                                        <button class="secondary-btn btn-small" @onclick="() => StartRename(client)" @onclick:stopPropagation="true">
+                                            Rename
+                                        </button>
+                                        <button class="secondary-btn btn-small btn-danger" @onclick="() => UnpairClientAsync(client.MachineId)" @onclick:stopPropagation="true">
+                                            Unpair
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+        @if (AppState.PairedClients.Count > 0)
+        {
+            <!-- Command Console Panel -->
+            <div class="panel">
+                <div class="panel-title">Send PowerShell Task</div>
+                <div class="target-client-row">
+                    <span class="target-client-label">Target Client:</span>
+                    <span class="target-client-badge @(AppState.ActiveClient != null ? "has-target" : "no-target")">
+                        @(AppState.ActiveClient == null ? "None (select a client above)" : (string.IsNullOrEmpty(AppState.ActiveClient.Alias) ? AppState.ActiveClient.MachineId : AppState.ActiveClient.Alias))
+                        @if (AppState.ActiveClient != null)
+                        {
+                            <span class="status-dot @WorkerNodeDot" style="margin-left: 6px;" title="@ActiveWorkerTooltip"></span>
+                        }
+                    </span>
+                </div>
+                <!-- Recent & Pinned Commands -->
+                @if (AppState.CommandHistory.Count > 0)
+                {
+                    <div class="form-group history-section">
+                        <div class="history-header">
+                            <label style="margin: 0;">Recent Commands (@AppState.CommandHistory.Count)</label>
+                            <button type="button" class="history-clear-btn" @onclick="ClearHistoryAsync">Clear All</button>
+                        </div>
+                        <div class="history-list">
+                            @for (int i = 0; i < AppState.CommandHistory.Count; i++)
+                            {
+                                int idx = i;
+                                var item = AppState.CommandHistory[i];
+                                <div class="history-item @(item.IsPinned ? "pinned" : "") @(item.Script == _expandedScript ? "expanded" : "")">
+                                    <div class="history-item-content" @onclick="() => ToggleHistoryExpand(item.Script)" title="Tap to expand/collapse (show 6 lines)">
+                                        @if (item.IsPinned)
+                                        {
+                                            <span class="history-pin-badge" title="Pinned">📌</span>
+                                        }
+                                        <span class="history-item-text @(item.Script == _expandedScript ? "expanded" : "collapsed")">@item.Script</span>
+                                    </div>
+                                    <div class="history-item-actions">
+                                        <button type="button" class="history-action-btn history-load-btn" @onclick="() => LoadHistory(idx)" title="Load into editor" aria-label="Load">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                                <polyline points="9 10 4 15 9 20"></polyline>
+                                                <path d="M20 4v7a4 4 0 0 1-4 4H4"></path>
+                                            </svg>
+                                        </button>
+                                        <button type="button" class="history-action-btn history-pin-btn @(item.IsPinned ? "active" : "")" @onclick="() => TogglePinAsync(idx)" title="@(item.IsPinned ? "Unpin command" : "Pin to top")" aria-label="Pin">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="@(item.IsPinned ? "currentColor" : "none")" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <line x1="12" y1="17" x2="12" y2="22"></line>
+                                                <path d="M5 17h14v-2l-2-2V5h1V3H6v2h1v8l-2 2v2z"></path>
+                                            </svg>
+                                        </button>
+                                        <button type="button" class="history-action-btn history-delete-btn" @onclick="() => DeleteHistoryItemAsync(idx)" title="Delete from history" aria-label="Delete">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                                <polyline points="3 6 5 6 21 6"></polyline>
+                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                                <line x1="10" y1="11" x2="10" y2="17"></line>
+                                                <line x1="14" y1="11" x2="14" y2="17"></line>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+                <div class="form-group">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <label for="scriptContent" style="margin: 0;">PowerShell Script</label>
+                        <button type="button" class="secondary-btn btn-small" style="padding: 4px 12px; min-height: 28px;" @onclick="ClearScript" disabled="@string.IsNullOrEmpty(scriptContent)">Clear</button>
+                    </div>
+                    <textarea id="scriptContent" rows="5" @bind="scriptContent" placeholder="Get-Process | Select-Object -First 5"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="executionMode">Execution Mode</label>
+                    <select id="executionMode" @bind="executionMode">
+                        <option value="@ExecutionMode.RunAsCurrentUser">Run as current user (Background)</option>
+                        <option value="@ExecutionMode.RunInteractiveAsCurrentUser">Run interactive as current user (Desktop GUI / Popups)</option>
+                        <option value="@ExecutionMode.RunWithHighestLocalPrivileges">Run with highest local privileges (SYSTEM / Admin)</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex-direction: row; align-items: center; justify-content: space-between; gap: 12px;">
+                    <label for="timeoutSeconds" style="cursor: pointer; margin: 0;">Timeout (seconds)</label>
+                    <input type="number" id="timeoutSeconds" @bind="timeoutSeconds" style="width: 90px; text-align: center;" min="0">
+                </div>
+                <button style="width: 100%; margin-top: 4px;" @onclick="SendCommandAsync" disabled="@AppState.IsAwaitingCommandResult">
+                    @(AppState.IsAwaitingCommandResult ? "Executing..." : "Execute Command")
+                </button>
+                <button class="secondary-btn" style="width: 100%; margin-top: 8px;" @onclick="TestConnectionAsync" disabled="@AppState.IsAwaitingCommandResult">
+                    Test Connection
+                </button>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px; text-align: center;">
+                    Test Connection performs a full round trip: encrypt, dispatch to Worker, run on PC, report back.
+                </div>
+                <button class="secondary-btn" style="width: 100%; margin-top: 8px;" @onclick="UpdateWorkerAsync" disabled="@AppState.IsAwaitingCommandResult">
+                    Update Worker
+                </button>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px; text-align: center;">
+                    Installs the latest Worker release from this client's Hub. Runs as SYSTEM / root; the Worker restarts and is offline for about a minute.
+                </div>
+            </div>
+
+            <!-- Output Logger Panel -->
+            <div class="panel" id="consoleOutputPanel">
+                <div class="panel-title" style="justify-content: space-between; align-items: center;">
+                    <span>Execution Console Output@(AppState.ActiveClient != null ? $" · {(string.IsNullOrEmpty(AppState.ActiveClient.Alias) ? AppState.ActiveClient.MachineId : AppState.ActiveClient.Alias)}" : "")</span>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <button class="secondary-btn btn-small" style="padding: 4px 12px; min-height: 32px;" @onclick="SendLogAsync" disabled="@isSendingLog">
+                            @sendLogBtnText
+                        </button>
+                        <button class="secondary-btn btn-small" style="padding: 4px 12px; min-height: 32px;" @onclick="ClearConsole">Clear</button>
+                    </div>
+                </div>
+                <div class="console-output-wrapper">
+                    <div class="console-output">@AppState.ConsoleOutput</div>
+                </div>
+            </div>
+        }
+
+        <!-- Advanced / Testing Panel -->
+        <details class="panel" style="padding: 0;">
+            <summary>Advanced (testing only)</summary>
+            <div style="padding: 0 16px 16px 16px;">
+                <div class="form-group">
+                    <label>App Unique ID (ECDSA P-256)</label>
+                    <input type="text" value="@AppState.AppId" readonly style="font-family: monospace; font-size: 11px;">
+                </div>
+            </div>
+        </details>
+
+        <div style="text-align: center; margin: 18px 0 6px 0;">
+            <a href="/downloads" style="font-size: 12px; color: var(--text-muted); text-decoration: none;">
+                ⚡ Download Worker &amp; Security Architecture &rarr;
+            </a>
+        </div>
+    </main>
+}
+
+@code {
+    private bool isInstalled = false;
+    private string? renamingMachineId;
+    private string renameInput = string.Empty;
+    private string scriptContent = "Get-Process | Select-Object -First 5";
+    private ExecutionMode executionMode = ExecutionMode.RunAsCurrentUser;
+    private int? timeoutSeconds = 42; // 42 seconds default
+
+    private int lastConsoleOutputLength = 0;
+
+    protected override void OnInitialized()
+    {
+        AppState.OnStateChanged += StateHasChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // .console-output is a fixed-height (150px), internally-scrolling box. Log() appends to
+        // it throughout a command's execution (which can take up to 90s), but a growing <div>
+        // never auto-scrolls itself - without this, the viewer stays stuck wherever they were
+        // ("Waiting for the Worker...") while the actual result renders below, out of view.
+        if (AppState.ConsoleOutput.Length != lastConsoleOutputLength)
+        {
+            lastConsoleOutputLength = AppState.ConsoleOutput.Length;
+            await JS.InvokeVoidAsync("qrScannerInterop.scrollConsoleToBottom");
+        }
+
+        if (firstRender)
+        {
+            try
+            {
+                // On localhost / dev, bypass PWA install requirement automatically
+                bool isLocalhost = await JS.InvokeAsync<bool>("qrScannerInterop.isLocalhost");
+
+                if (isLocalhost)
+                {
+                    isInstalled = true;
+                }
+                else
+                {
+                    isInstalled = await JS.InvokeAsync<bool>("qrScannerInterop.isRunningStandalone");
+                }
+
+                if (isInstalled)
+                {
+                    await AppState.InitializeAsync();
+                    _ = HubApi.ResumePendingCommandsAsync();
+                    Watchdog.Start();
+                }
+                StateHasChanged();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"JS Standalone Check Error: {ex.Message}");
+                isInstalled = true;
+                await AppState.InitializeAsync();
+                _ = HubApi.ResumePendingCommandsAsync();
+                Watchdog.Start();
+                StateHasChanged();
+            }
+        }
+    }
+
+    private async Task BypassPwaAsync()
+    {
+        await JS.InvokeVoidAsync("qrScannerInterop.setBypassPwa");
+        isInstalled = true;
+        await AppState.InitializeAsync();
+        _ = HubApi.ResumePendingCommandsAsync();
+        Watchdog.Start();
+    }
+
+
+    private async Task UnpairClientAsync(string machineId)
+    {
+        var client = AppState.PairedClients.FirstOrDefault(c => c.MachineId == machineId);
+        string label = string.IsNullOrEmpty(client?.Alias) ? machineId : client.Alias;
+
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", $"Unpair \"{label}\"? You'll need to scan its QR code again from the Worker's onboarding page to reconnect.");
+        if (!confirmed) return;
+
+        await AppState.UnpairClientAsync(machineId);
+    }
+
+    private void SelectClient(string machineId)
+    {
+        AppState.SelectActiveClient(machineId);
+    }
+
+    private void StartRename(PairedClient client)
+    {
+        renamingMachineId = client.MachineId;
+        renameInput = client.Alias;
+    }
+
+    private void CancelRename()
+    {
+        renamingMachineId = null;
+        renameInput = string.Empty;
+    }
+
+    private async Task SaveRenameAsync()
+    {
+        if (renamingMachineId != null && !string.IsNullOrWhiteSpace(renameInput))
+        {
+            await AppState.RenameClientAsync(renamingMachineId, renameInput);
+        }
+        CancelRename();
+    }
+
+    private void LoadHistory(int index)
+    {
+        if (index >= 0 && index < AppState.CommandHistory.Count)
+        {
+            scriptContent = AppState.CommandHistory[index].Script;
+        }
+    }
+
+    private async Task TogglePinAsync(int index)
+    {
+        await AppState.TogglePinScriptAsync(index);
+    }
+
+    private async Task DeleteHistoryItemAsync(int index)
+    {
+        if (index < 0 || index >= AppState.CommandHistory.Count) return;
+        var item = AppState.CommandHistory[index];
+        if (item.IsPinned)
+        {
+            bool confirmed = await JS.InvokeAsync<bool>("confirm", "Delete this pinned command from history?");
+            if (!confirmed) return;
+        }
+        await AppState.RemoveScriptFromHistoryAsync(index);
+    }
+
+    private async Task ClearHistoryAsync()
+    {
+        bool hasPinned = AppState.CommandHistory.Any(c => c.IsPinned);
+        string message = hasPinned 
+            ? "Clear all recent unpinned commands? (Pinned commands will be kept)" 
+            : "Clear all command history?";
+
+        bool confirmed = await JS.InvokeAsync<bool>("confirm", message);
+        if (confirmed)
+        {
+            await AppState.ClearCommandHistoryAsync(unpinnedOnly: hasPinned);
+        }
+    }
+
+    private string? _expandedScript;
+
+    private void ToggleHistoryExpand(string script)
+    {
+        _expandedScript = _expandedScript == script ? null : script;
+    }
+
+    private async Task SendCommandAsync()
+    {
+        if (AppState.ActiveClient == null)
+        {
+            AppState.Log("Error: Select a paired client first.");
+            return;
+        }
+
+        await JS.InvokeVoidAsync("qrScannerInterop.scrollToElement", "consoleOutputPanel");
+        await HubApi.SendCommandAsync(AppState.ActiveClient, scriptContent, executionMode, timeoutSeconds);
+    }
+
+    /// <summary>
+    /// Deep availability check: unlike the passive watchdog dot (which only proves the Worker is
+    /// still talking to the Hub), this drives a real command all the way through decryption,
+    /// execution on the PC, and back - so it catches a Worker that's alive but broken.
+    /// </summary>
+    private async Task TestConnectionAsync()
+    {
+        if (AppState.ActiveClient == null)
+        {
+            AppState.Log("Error: Select a paired client first.");
+            return;
+        }
+
+        AppState.Log("Running connection test (full round trip)...");
+        await JS.InvokeVoidAsync("qrScannerInterop.scrollToElement", "consoleOutputPanel");
+        await HubApi.SendCommandAsync(
+            AppState.ActiveClient,
+            "Write-Output \"RemotePulse connection test OK on $([System.Environment]::MachineName) at $(Get-Date -Format o)\"",
+            ExecutionMode.RunAsCurrentUser,
+            60,
+            recordInHistory: false);
+
+        // The Worker just checked in to collect this command, so refresh the dot immediately
+        // rather than leaving it stale until the next 20s watchdog tick.
+        await Watchdog.CheckAllAsync();
+    }
+
+    /// <summary>
+    /// Sends the predefined self-update command (see Services/WorkerSelfUpdate.cs). The result
+    /// only says the update was scheduled; the new version shows up on the Worker node once the
+    /// restarted Worker polls again.
+    /// </summary>
+    private async Task UpdateWorkerAsync()
+    {
+        if (AppState.ActiveClient == null)
+        {
+            AppState.Log("Error: Select a paired client first.");
+            return;
+        }
+
+        var client = AppState.ActiveClient;
+        string label = string.IsNullOrEmpty(client.Alias) ? client.MachineId : client.Alias;
+        string hub = Models.ClientStatusDisplay.HubHost(client.ServerUrl);
+        bool confirmed = await JS.InvokeAsync<bool>("confirm",
+            $"Update the Worker on \"{label}\" to the latest release from {(string.IsNullOrEmpty(hub) ? "its Hub" : hub)}?\n\n" +
+            "It runs as SYSTEM / root and restarts the Worker, which is offline for about a minute.");
+        if (!confirmed) return;
+
+        AppState.Log("Requesting Worker self-update...");
+        await JS.InvokeVoidAsync("qrScannerInterop.scrollToElement", "consoleOutputPanel");
+        await HubApi.SendCommandAsync(
+            client,
+            WorkerSelfUpdate.Script,
+            WorkerSelfUpdate.Mode,
+            WorkerSelfUpdate.TimeoutSeconds,
+            recordInHistory: false);
+    }
+
+    private void ClearConsole()
+    {
+        AppState.ClearConsole();
+    }
+
+    private void ClearScript()
+    {
+        scriptContent = string.Empty;
+    }
+
+    private bool isSendingLog = false;
+    private string sendLogBtnText = "Send Log";
+
+    private async Task SendLogAsync()
+    {
+        if (isSendingLog) return;
+
+        string serverUrl = AppState.ActiveClient?.ServerUrl ?? AppState.PairedClients.FirstOrDefault()?.ServerUrl ?? Nav.BaseUri;
+        string? machineId = AppState.ActiveClient?.MachineId ?? AppState.PairedClients.FirstOrDefault()?.MachineId;
+
+        isSendingLog = true;
+        sendLogBtnText = "Sending...";
+        StateHasChanged();
+
+        try
+        {
+            // DiagnosticOutput, not ConsoleOutput: it leaves decrypted result content on this device.
+            string rawOutput = AppState.DiagnosticOutput ?? string.Empty;
+            var lines = rawOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+            string cappedOutput = lines.Length > 100 
+                ? string.Join('\n', lines[^100..]) 
+                : rawOutput;
+
+            if (string.IsNullOrWhiteSpace(cappedOutput))
+            {
+                cappedOutput = "No console activity recorded yet.";
+            }
+
+            var telemetryData = new
+            {
+                ConsoleOutput = cappedOutput,
+                ActiveClientMachineId = machineId,
+                AppId = AppState.AppId,
+                ClientCount = AppState.PairedClients.Count,
+                TimestampUtc = DateTime.UtcNow
+            };
+
+            var entry = new TelemetryLogEntry
+            {
+                Source = "App",
+                MachineId = machineId,
+                AppId = AppState.AppId,
+                LogLevel = "Information",
+                Category = "Diagnostics",
+                EventName = "ManualAppLogUpload",
+                Message = $"Manual log upload from mobile app ({Math.Min(lines.Length, 100)} lines)",
+                DataJson = System.Text.Json.JsonSerializer.Serialize(telemetryData)
+            };
+
+            bool success = await HubApi.PostTelemetryAsync(serverUrl, entry);
+            if (success)
+            {
+                sendLogBtnText = "✓ Sent";
+                AppState.Log("Diagnostic log successfully pushed to Hub.");
+            }
+            else
+            {
+                sendLogBtnText = "Failed";
+                AppState.Log("Warning: Could not upload diagnostic log to Hub.");
+            }
+        }
+        catch (Exception ex)
+        {
+            sendLogBtnText = "Error";
+            AppState.Log($"Failed to send log: {ex.Message}");
+        }
+        finally
+        {
+            StateHasChanged();
+            _ = Task.Delay(5000).ContinueWith(_ =>
+            {
+                isSendingLog = false;
+                sendLogBtnText = "Send Log";
+                InvokeAsync(StateHasChanged);
+            });
+        }
+    }
+
+    // --- App -> Hub -> Worker chain indicator ---------------------------------------------------
+    // Each node maps to a .status-dot shape: online / degraded / offline / unknown.
+
+    private string AppNodeDot => AppState.DeviceOnline ? "online" : "offline";
+
+    private string HubNodeDot =>
+        Models.ClientStatusDisplay.HubDot(AppState.DeviceOnline, AppState.HubReachable, AppState.HasWatchdogResult, ActiveClientRecordedStatus);
+
+    // Not GetClientStatus: its fallback for an unknown machine says "Hub unreachable".
+    private ClientStatus? ActiveClientRecordedStatus =>
+        AppState.ActiveClient != null && AppState.ClientStatuses.TryGetValue(AppState.ActiveClient.MachineId, out var s) ? s : null;
+
+    private string ActiveHubHost => Models.ClientStatusDisplay.HubHost(AppState.ActiveClient?.ServerUrl);
+
+    private string ActiveWorkerLastSeen =>
+        AppState.HasWatchdogResult ? Models.ClientStatusDisplay.LastSeenShort(ActiveClientRecordedStatus) : string.Empty;
+
+    // The long form ("Last seen 35s ago - missed 2 check-ins.") on long-press.
+    private string ActiveWorkerTooltip =>
+        AppState.ActiveClient == null ? string.Empty : StatusTooltip(AppState.GetClientStatus(AppState.ActiveClient.MachineId));
+
+    private string WorkerNodeDot
+    {
+        get
+        {
+            // The Worker is only knowable through a reachable Hub.
+            if (!AppState.DeviceOnline || AppState.HubReachable != true || AppState.ActiveClient == null)
+            {
+                return "unknown";
+            }
+            return Models.ClientStatusDisplay.DotClass(AppState.GetClientStatus(AppState.ActiveClient.MachineId));
+        }
+    }
+
+    private string ChainCaption
+    {
+        get
+        {
+            if (!AppState.DeviceOnline)
+                return "This device is offline - showing the last known state.";
+            if (!AppState.HasWatchdogResult || AppState.HubReachable == null)
+                return "Checking connection...";
+            if (AppState.HubReachable == false)
+                return "Can't reach the Hub - the Worker's status is unknown.";
+            if (AppState.ActiveClient == null)
+                return "Connected to the Hub. Pair a client to reach a Worker.";
+
+            var s = AppState.GetClientStatus(AppState.ActiveClient.MachineId);
+            if (s.HubUnreachable)
+                return "Can't reach the Hub - the Worker's status is unknown.";
+            return Models.ClientStatusDisplay.WorkerCaption(s);
+        }
+    }
+
+    // Presentation lives in Models/ClientStatusDisplay.cs so it can be unit tested directly.
+    private static string DotClass(ClientStatus status) => Models.ClientStatusDisplay.DotClass(status);
+
+    private string BadgeText(ClientStatus status) => Models.ClientStatusDisplay.BadgeText(status, AppState.HasWatchdogResult);
+
+    private string StatusTooltip(ClientStatus status) => Models.ClientStatusDisplay.Tooltip(status, AppState.HasWatchdogResult);
+
+    public void Dispose()
+    {
+        AppState.OnStateChanged -= StateHasChanged;
+        Watchdog.Stop();
+    }
+}

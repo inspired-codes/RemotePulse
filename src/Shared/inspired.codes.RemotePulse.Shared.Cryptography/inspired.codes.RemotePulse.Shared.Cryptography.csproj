@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>InspiredCodes.RemotePulse.Shared.Cryptography</RootNamespace>
+    <AssemblyName>inspired.codes.RemotePulse.Shared.Cryptography</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.11" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,299 @@
+/* ==========================================================================
+   RemotePulse Layout Styles
+   ========================================================================== */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Keeps anchored section titles clear of the sticky navbar. */
+section[id],
+article[id] {
+  scroll-margin-top: 84px;
+}
+
+body {
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  line-height: 1.6;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color var(--transition-normal), color var(--transition-normal);
+}
+
+.container {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* --- Sticky Top Navigation --- */
+nav.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--bg-nav);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-color);
+  padding: 14px 0;
+  transition: background var(--transition-normal), border-color var(--transition-normal);
+}
+
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.brand-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  text-decoration: none;
+  color: var(--text-primary);
+}
+
+.brand-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  display: block;
+  flex-shrink: 0;
+}
+
+.brand-name {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  list-style: none;
+}
+
+.nav-link {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+  transition: color var(--transition-fast);
+}
+
+.nav-link:hover {
+  color: var(--accent-primary);
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* --- Hero Section --- */
+.hero-section {
+  padding: 56px 0 24px 0;
+  text-align: left;
+}
+
+.hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent-pill);
+  border: 1px solid var(--border-color);
+  color: var(--accent-pill-text);
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 4px 14px;
+  border-radius: var(--radius-full);
+  margin-bottom: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.hero-title {
+  font-size: clamp(32px, 4.5vw, 48px);
+  font-weight: 900;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+  margin-bottom: 14px;
+  max-width: 860px;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.hero-title-accent {
+  color: var(--accent-primary);
+}
+
+.hero-subtitle {
+  font-size: clamp(15.5px, 1.8vw, 18px);
+  color: var(--text-muted);
+  max-width: 760px;
+  margin: 0 0 28px 0;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+/* --- Section Layouts --- */
+.section {
+  padding: 40px 0;
+}
+
+.hero-section + .section {
+  padding-top: 24px;
+}
+
+.section-header {
+  text-align: left;
+  margin-bottom: 28px;
+  border-bottom: 1px solid var(--border-subtle);
+  padding-bottom: 14px;
+}
+
+.section-title {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.section-subtitle {
+  font-size: 15px;
+  color: var(--text-muted);
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+/* --- Spotlight Callout Card --- */
+.spotlight-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: 36px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 20px;
+  box-shadow: var(--shadow-md);
+  margin: 24px 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.spotlight-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--accent-gradient);
+}
+
+.spotlight-header {
+  width: 100%;
+}
+
+.spotlight-title {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 10px;
+}
+
+.spotlight-desc {
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 14px;
+  max-width: 85ch;
+}
+
+/* --- Footer --- */
+footer.site-footer {
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-card);
+  padding: 32px 0;
+  margin-top: 64px;
+  font-size: 13.5px;
+  color: var(--text-muted);
+}
+
+.footer-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.footer-links {
+  display: flex;
+  gap: 20px;
+  list-style: none;
+}
+
+.footer-links a {
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.footer-links a:hover {
+  color: var(--accent-primary);
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 16px;
+  }
+  .grid-3 {
+    grid-template-columns: 1fr;
+  }
+  .nav-links { display: none; }
+  .spotlight-card {
+    padding: 24px 16px;
+  }
+}
+
+/* Phone navbar: the brand + status badge + theme button row can't shrink, so drop labels progressively. */
+.badge-status { white-space: nowrap; }
+
+@media (max-width: 480px) {
+  .nav-inner { gap: 12px; }
+  .nav-actions { gap: 8px; }
+  .theme-btn { padding: 6px 10px; gap: 6px; }
+  #currentThemeLabel { display: none; }
+}
+
+@media (max-width: 380px) {
+  .badge-status { padding: 6px; }
+  /* Visually hidden but still announced by screen readers. */
+  #hubStatusText {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}

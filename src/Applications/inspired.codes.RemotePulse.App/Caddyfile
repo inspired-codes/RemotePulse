@@ -1,0 +1,81 @@
+# Static file server inside the `web` image (the App's wwwroot at /srv). Replaces the old nginx.conf.
+# The edge Caddy on both hosts reverse-proxies to this as web:8080; nothing reaches it directly.
+#
+# Runs as an unprivileged user on a high port with no admin API, no automatic HTTPS and no
+# on-disk state, so the container can run with a read-only root filesystem and no capabilities.
+# Check a running instance with scripts/verify-web.sh <base-url>.
+{
+    admin off
+    auto_https off
+    persist_config off
+}
+
+:8080 {
+    root * /srv
+
+    # Directives inside route run in the order written, so the header rules below see the path
+    # after the rewrites above them.
+    route {
+        header X-Content-Type-Options nosniff
+        header -Server
+
+        # Default for everything hand-maintained (app.css, js/*, icons, *.zip, *.json, *.ps1 ...).
+        # Those keep the same filename across builds, so a far-future cache would hide edits from
+        # clients. no-cache still lets the browser keep a copy but makes it revalidate first (a
+        # cheap conditional GET), so changes show up on the next load. This must stay a plain
+        # (non-deferred) header, written before the overrides below, which then win.
+        header Cache-Control no-cache
+
+        # The legacy page paths go to the landing page.
+        @legacy path /downloads /downloads/ /portal /portal/
+        redir @legacy / permanent
+
+        # The landing page is portal.html; /security serves the standalone Security & Trust page.
+        rewrite / /portal.html
+        rewrite /security /security.html
+
+        # Blazor routes (/app, /scan, /pairing/v1, ...) fall back to the PWA shell. Only for
+        # extensionless paths: a missing .js/.ps1/.zip must stay a 404, never an HTML page with
+        # status 200 (think `irm .../get-worker.ps1 | iex`).
+        @spa {
+            not path_regexp \.[A-Za-z0-9]+$
+            not path /_framework/*
+            not file
+        }
+        rewrite @spa /index.html
+
+        # Blazor framework assets carry a content-fingerprinted filename (a new build's importmap
+        # always points at a new URL), so a far-future cache is safe here.
+        header /_framework/* Cache-Control "public, max-age=31536000, immutable, no-transform"
+
+        # The PWA entry points and static HTML pages must always be fetched fresh or updates never arrive.
+        @shell path /index.html /portal.html /security.html /service-worker.js /manifest.json
+        header @shell Cache-Control no-store
+
+        # Types the extension table gets wrong or doesn't know.
+        @text path *.ps1 *.sha256
+        header @text Content-Type "text/plain; charset=utf-8"
+        @zip path *.zip
+        header @zip Content-Type application/zip
+        @json path *.json
+        header @json Content-Type application/json
+
+        # The Blazor publish ships .br/.gz next to every asset; serve those as they are. Anything
+        # without a sibling (get-worker.ps1, worker-version.json, ...) is compressed on the fly.
+        # Zips are not compressible and are skipped.
+        encode zstd gzip
+        file_server {
+            precompressed br gzip
+        }
+    }
+
+    # A missing file is a 404 error to Caddy, and the headers set above would ride along with it
+    # (an "immutable, 1 year" 404 for a not-yet-deployed /_framework/ URL would stick in browser
+    # caches). Errors get their own minimal answer, and are never cached.
+    handle_errors {
+        header Cache-Control no-store
+        header X-Content-Type-Options nosniff
+        header -Server
+        respond "{err.status_code} {err.status_text}" {err.status_code}
+    }
+}

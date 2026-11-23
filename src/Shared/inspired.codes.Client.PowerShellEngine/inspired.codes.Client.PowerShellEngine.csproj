@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RootNamespace>InspiredCodes.Client.PowerShellEngine</RootNamespace>
+    <AssemblyName>inspired.codes.Client.PowerShellEngine</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.PowerShell.SDK" Version="7.6.10" />
+    <PackageReference Include="System.Security.Cryptography.Xml" Version="10.0.15" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\inspired.codes.RemotePulse.Shared.Contracts\inspired.codes.RemotePulse.Shared.Contracts.csproj" />
+  </ItemGroup>
+
+</Project>

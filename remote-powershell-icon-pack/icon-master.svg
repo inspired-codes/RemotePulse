@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="glyphGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00a3e0"/>
+      <stop offset="100%" stop-color="#0077b6"/>
+    </linearGradient>
+    <filter id="subtleGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="16" flood-color="#0077b6" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- Background container with rounded corners (squircle-like) -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)"/>
+  <rect width="510" height="510" x="1" y="1" rx="111" fill="none" stroke="#334155" stroke-width="2" stroke-opacity="0.6"/>
+
+  <!-- Command & Remote Signal Glyph -->
+  <g filter="url(#subtleGlow)" stroke="url(#glyphGrad)" stroke-linecap="round" fill="none">
+    <!-- Chevron (PowerShell / Execution) -->
+    <path d="M 120 148 L 228 256 L 120 364" stroke-width="46" stroke-linejoin="round"/>
+
+    <!-- Signal Arc 1 (Remote Hub relay) -->
+    <path d="M 276 178 A 110 110 0 0 1 276 334" stroke-width="40"/>
+
+    <!-- Signal Arc 2 (Remote Worker broadcast) -->
+    <path d="M 348 138 A 170 170 0 0 1 348 374" stroke-width="40"/>
+  </g>
+</svg>

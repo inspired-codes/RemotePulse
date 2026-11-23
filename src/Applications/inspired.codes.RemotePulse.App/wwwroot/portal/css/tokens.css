@@ -1,0 +1,147 @@
+/* ==========================================================================
+   RemotePulse Portal Design Tokens (Light, Dark, High-Contrast)
+   Inspired by Microsoft Learn Design System
+   ========================================================================== */
+
+:root {
+  /* Common Brand Tokens */
+  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace, Consolas;
+
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 26px;
+  --radius-full: 9999px;
+
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Primary Accent Colors */
+  --accent-primary: #0284c7;
+  --accent-hover: #0369a1;
+  --accent-glow: rgba(2, 132, 199, 0.18);
+  --accent-gradient: linear-gradient(135deg, #0284c7 0%, #6366f1 100%);
+  --accent-pill: #e0f2fe;
+  --accent-pill-text: #0369a1;
+
+  --emerald: #059669;
+  --emerald-glow: rgba(5, 150, 105, 0.18);
+}
+
+/* ==========================================================================
+   Theme: Light (Default)
+   ========================================================================== */
+html.theme-light {
+  --bg-page: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f1f5f9;
+  --bg-subtle: #f1f5f9;
+  --bg-nav: rgba(255, 255, 255, 0.88);
+  --bg-console: #0f172a;
+
+  --border-color: #e2e8f0;
+  --border-subtle: #edf2f7;
+  --border-focus: #0284c7;
+
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --text-dim: #94a3b8;
+
+  --console-text: #4ade80;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.08);
+
+  --banner-bg: linear-gradient(90deg, #e0f2fe 0%, #ede9fe 100%);
+  --banner-border: #bae6fd;
+  --banner-text: #0f172a;
+  --banner-badge-bg: #0284c7;
+  --banner-badge-text: #ffffff;
+}
+
+/* ==========================================================================
+   Theme: Dark
+   ========================================================================== */
+html.theme-dark {
+  --bg-page: #070b14;
+  --bg-card: rgba(15, 23, 42, 0.78);
+  --bg-card-hover: rgba(24, 35, 60, 0.88);
+  --bg-subtle: #0f172a;
+  --bg-nav: rgba(7, 11, 20, 0.85);
+  --bg-console: #030712;
+
+  --border-color: rgba(255, 255, 255, 0.09);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-focus: rgba(56, 189, 248, 0.5);
+
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+
+  --accent-primary: #38bdf8;
+  --accent-hover: #7dd3fc;
+  --accent-glow: rgba(56, 189, 248, 0.22);
+  --accent-gradient: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+  --accent-pill: rgba(56, 189, 248, 0.15);
+  --accent-pill-text: #7dd3fc;
+
+  --emerald: #34d399;
+  --emerald-glow: rgba(52, 211, 153, 0.2);
+
+  --console-text: #4ade80;
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
+
+  --banner-bg: linear-gradient(90deg, rgba(56, 189, 248, 0.14) 0%, rgba(129, 140, 248, 0.14) 100%);
+  --banner-border: rgba(56, 189, 248, 0.24);
+  --banner-text: #f8fafc;
+  --banner-badge-bg: #38bdf8;
+  --banner-badge-text: #030712;
+}
+
+/* ==========================================================================
+   Theme: High Contrast
+   ========================================================================== */
+html.theme-high-contrast {
+  --bg-page: #000000;
+  --bg-card: #000000;
+  --bg-card-hover: #1a1a1a;
+  --bg-subtle: #000000;
+  --bg-nav: #000000;
+  --bg-console: #000000;
+
+  --border-color: #ffffff;
+  --border-subtle: #ffffff;
+  --border-focus: #ffff00;
+
+  --text-primary: #ffffff;
+  --text-secondary: #ffffff;
+  --text-muted: #e0e0e0;
+  --text-dim: #c0c0c0;
+
+  --accent-primary: #1ae6ff;
+  --accent-hover: #ffffff;
+  --accent-glow: none;
+  --accent-gradient: none;
+  --accent-pill: #000000;
+  --accent-pill-text: #ffff00;
+
+  --emerald: #00ff66;
+  --emerald-glow: none;
+
+  --console-text: #00ff66;
+  --shadow-sm: none;
+  --shadow-md: none;
+  --shadow-lg: none;
+
+  --banner-bg: #000000;
+  --banner-border: #ffffff;
+  --banner-text: #ffffff;
+  --banner-badge-bg: #ffff00;
+  --banner-badge-text: #000000;
+}

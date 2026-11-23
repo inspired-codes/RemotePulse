@@ -1,0 +1,25 @@
+<Solution>
+  <Folder Name="/src/" />
+  <Folder Name="/src/Applications/">
+    <Project Path="src/Applications/inspired.codes.RemotePulse.App/inspired.codes.RemotePulse.App.csproj" />
+    <Project Path="src/Applications/inspired.codes.RemotePulse.Worker/inspired.codes.RemotePulse.Worker.csproj" />
+    <Project Path="src/Applications/inspired.codes.RemotePulse.HubServer/inspired.codes.RemotePulse.HubServer.csproj" />
+  </Folder>
+  <Folder Name="/src/Shared/">
+    <Project Path="src/Shared/inspired.codes.Client.PowerShellEngine/inspired.codes.Client.PowerShellEngine.csproj" />
+    <Project Path="src/Shared/inspired.codes.RemotePulse.Shared.Contracts/inspired.codes.RemotePulse.Shared.Contracts.csproj" />
+    <Project Path="src/Shared/inspired.codes.RemotePulse.Shared.Cryptography/inspired.codes.RemotePulse.Shared.Cryptography.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/inspired.codes.Client.PowerShellEngine.Tests/inspired.codes.Client.PowerShellEngine.Tests.csproj" />
+    <Project Path="tests/inspired.codes.RemotePulse.Worker.Tests/inspired.codes.RemotePulse.Worker.Tests.csproj" />
+    <Project Path="tests/inspired.codes.RemotePulse.HubServer.IntegrationTests/inspired.codes.RemotePulse.HubServer.IntegrationTests.csproj" />
+    <Project Path="tests/inspired.codes.RemotePulse.EndToEnd.Tests/inspired.codes.RemotePulse.EndToEnd.Tests.csproj" />
+    <Project Path="tests/inspired.codes.RemotePulse.App.Tests/inspired.codes.RemotePulse.App.Tests.csproj" />
+    <Project Path="tests/inspired.codes.RemotePulse.Shared.Cryptography.Tests/inspired.codes.RemotePulse.Shared.Cryptography.Tests.csproj" />
+  </Folder>
+  <Folder Name="/docs/">
+    <File Path="docs/architecture.md" />
+    <File Path="docs/communication.md" />
+  </Folder>
+</Solution>

@@ -1,0 +1,74 @@
+# Builds the Worker release zips from a tagged commit, attests their build provenance and
+# publishes them as a GitHub Release. Anyone can then check that a zip they downloaded (from
+# the Release or from a RemotePulse server) was built by this workflow from this repository:
+#
+#   gh attestation verify RemotePulse-Worker-windows-x64.zip --repo inspired-codes/RemotePulse
+#
+# Tag format: worker-v<Version>, matching <Version> in the Worker's .csproj (e.g. worker-v2.0.1).
+name: Release
+
+on:
+  push:
+    tags: ['worker-v*']
+
+permissions:
+  contents: write      # create the GitHub Release
+  id-token: write      # sign the provenance attestation (Sigstore)
+  attestations: write  # store the attestation
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    env:
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
+        with:
+          global-json-file: global.json
+
+      - name: Check that the tag matches the Worker version
+        shell: pwsh
+        run: |
+          [xml]$proj = Get-Content src/Applications/inspired.codes.RemotePulse.Worker/inspired.codes.RemotePulse.Worker.csproj
+          $version = @($proj.Project.PropertyGroup.Version | Where-Object { $_ })[0]
+          if ("worker-v$version" -ne $env:TAG) { throw "Tag $env:TAG does not match the Worker <Version> $version" }
+
+      - name: Test
+        run: dotnet test RemotePulse.slnx
+
+      - name: Package the Worker zips
+        shell: pwsh
+        run: ./deploy/Package-WorkerRelease.ps1
+
+      # Free on public repositories only; a private repository would need GitHub Enterprise
+      # Cloud, so the step is skipped while the repository is private.
+      - name: Attest build provenance
+        if: ${{ !github.event.repository.private }}
+        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: dist/RemotePulse-Worker-*.zip
+
+      - name: Publish the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          version="${TAG#worker-v}"
+          {
+            echo "RemotePulse Worker $version, built from $GITHUB_SHA by the Release workflow."
+            echo
+            echo "SHA-256:"
+            echo '```'
+            cat dist/RemotePulse-Worker-*.zip.sha256
+            echo '```'
+            echo
+            echo "Verify where a zip came from (needs the GitHub CLI):"
+            echo '```'
+            echo "gh attestation verify RemotePulse-Worker-windows-x64.zip --repo $REPO"
+            echo '```'
+          } > notes.md
+          gh release create "$TAG" --repo "$REPO" --title "RemotePulse Worker $version" --notes-file notes.md \
+            dist/RemotePulse-Worker-*.zip dist/RemotePulse-Worker-*.zip.sha256 dist/worker-version.json

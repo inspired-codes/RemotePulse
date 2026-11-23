@@ -1,0 +1,23 @@
+@inject NavigationManager Nav
+
+@*
+    Rendered for any address that matches no route. Installed as a PWA there is no address bar
+    and no browser chrome, so a dead-end "nothing here" page leaves the only way out being to
+    force-quit the app - which is exactly how a wrong start_url turned into an app that looked
+    broken on launch. Sending the user to the main page instead means an unknown address is a
+    momentary blip rather than a trap.
+
+    replace: true so the bad address is not left in history: without it, Back lands right back
+    on the dead end.
+*@
+
+<div style="padding: 24px; text-align: center; font-size: 14px; color: var(--text-muted);">
+    Taking you to the main page...
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Nav.NavigateTo("app", forceLoad: false, replace: true);
+    }
+}

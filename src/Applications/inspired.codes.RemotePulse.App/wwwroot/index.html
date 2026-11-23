@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>RemotePulse Mobile Client</title>
+  <base href="/" />
+  <!-- Captures the actual error text and shows it in-page (#error-detail below), instead of
+       the default generic "An unhandled error has occurred." with details only in devtools -
+       there's no realistic way to attach devtools to this page on a phone. Registered before
+       any other script so it also catches boot-time failures. Blazor's own error handling
+       generally catches the .NET exception internally and just flips #blazor-error-ui visible
+       directly - never a real JS 'error'/'unhandledrejection' event - but it always
+       console.error()s the full exception first, so that's intercepted too and is the more
+       reliable source in practice. Everything gets buffered (not just the latest), because
+       ordering between "logged" and "banner shown" isn't guaranteed either way. -->
+  <script>
+    window.__rpErrorBuffer = [];
+    function rpBufferError(text) {
+      window.__rpErrorBuffer.push(text);
+      if (window.__rpErrorBuffer.length > 8) window.__rpErrorBuffer.shift();
+    }
+    var rpOrigConsoleError = console.error;
+    console.error = function () {
+      var text = Array.prototype.slice.call(arguments).map(function (a) {
+        if (a instanceof Error) return a.message + (a.stack ? '\n' + a.stack : '');
+        if (typeof a === 'object' && a !== null) { try { return JSON.stringify(a); } catch (e) { return String(a); } }
+        return String(a);
+      }).join(' ');
+      rpBufferError(text);
+      rpOrigConsoleError.apply(console, arguments);
+    };
+    window.addEventListener('error', function (e) {
+      rpBufferError((e.message || 'Unknown error') + (e.filename ? ' @ ' + e.filename.split('/').pop() + ':' + e.lineno : ''));
+    });
+    window.addEventListener('unhandledrejection', function (e) {
+      var reason = e.reason;
+      rpBufferError('Unhandled promise rejection: ' + (reason && reason.message ? reason.message : String(reason)));
+    });
+  </script>
+  <link rel="preload" id="webassembly" />
+  <link rel="icon" type="image/x-icon" href="/icons/favicon.ico" />
+  <link rel="icon" type="image/svg+xml" href="/icons/icon-master.svg" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180x180.png" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png" />
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="app.css?v=6">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <!-- HTML5-QRCode library -->
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+  <!-- JS Interop -->
+  <script src="js/qrScannerInterop.js?v=5" type="text/javascript"></script>
+  <script type="importmap"></script>
+</head>
+<body>
+  <div id="app">
+    <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh; box-sizing: border-box; padding: 24px; font-family: 'Outfit', sans-serif; color: #38bdf8; background-color: #0f172a;">
+      <div style="text-align: center; max-width: 320px;">
+        <div style="font-size: 24px; font-weight: 800; margin-bottom: 12px;">RemotePulse</div>
+        <div style="font-size: 14px; color: #94a3b8;">Loading .NET WebAssembly Console...</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="blazor-error-ui" style="display: none;">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+  </div>
+  <script>
+    (function () {
+      var ui = document.getElementById('blazor-error-ui');
+      new MutationObserver(function () {
+        if (ui.style.display === 'none' || ui.style.display === '') return;
+        var detail = document.getElementById('error-detail');
+        if (!detail) {
+          detail = document.createElement('div');
+          detail.id = 'error-detail';
+          ui.insertBefore(detail, ui.querySelector('.reload'));
+        }
+        if (!detail.textContent && window.__rpErrorBuffer && window.__rpErrorBuffer.length > 0) {
+          detail.textContent = window.__rpErrorBuffer.join(' | ');
+        }
+      }).observe(ui, { attributes: true, attributeFilter: ['style'] });
+    })();
+  </script>
+
+  <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js').catch(err => console.log('Service worker not registered', err));
+    }
+  </script>
+</body>
+</html>
