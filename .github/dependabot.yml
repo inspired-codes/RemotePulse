@@ -9,7 +9,11 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    open-pull-requests-limit: 10
     # Major versions (e.g. .NET 11 packages) are a deliberate upgrade, not a routine bump.
     ignore:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
+      # PowerShell 7.7 targets .NET 11 only; it comes with the .NET 11 upgrade.
+      - dependency-name: "Microsoft.PowerShell.SDK"
+        versions: [">= 7.7.0"]

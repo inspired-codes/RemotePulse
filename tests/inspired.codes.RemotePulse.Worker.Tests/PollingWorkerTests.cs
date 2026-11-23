@@ -490,17 +490,21 @@ public class PollingWorkerTests : IDisposable
         Assert.NotNull(postedResult);
         Assert.True(postedResult.Success);
 
+        // The header carries the Worker's own <Version> (from the assembly), not a hardcoded string,
+        // so a release bump doesn't break this test.
+        Assert.Matches(@"^\d+\.\d+\.\d+$", PollingWorker.WorkerVersion);
+
         // Verify headers on poll (GET)
         var pollRequest = Assert.Single(requests, r => r.Method == HttpMethod.Get);
         Assert.True(pollRequest.Headers.Contains(ProtocolConstants.WorkerVersionHeaderName));
-        Assert.Equal("2.0.1", pollRequest.Headers.GetValues(ProtocolConstants.WorkerVersionHeaderName).Single());
+        Assert.Equal(PollingWorker.WorkerVersion, pollRequest.Headers.GetValues(ProtocolConstants.WorkerVersionHeaderName).Single());
         Assert.True(pollRequest.Headers.Contains(ProtocolConstants.WorkerCapabilitiesHeaderName));
         Assert.Equal(string.Empty, pollRequest.Headers.GetValues(ProtocolConstants.WorkerCapabilitiesHeaderName).Single());
 
         // Verify headers on result post (POST)
         var resultPost = Assert.Single(requests, r => r.Method == HttpMethod.Post && r.RequestUri?.AbsolutePath.Contains("telemetry") != true);
         Assert.True(resultPost.Headers.Contains(ProtocolConstants.WorkerVersionHeaderName));
-        Assert.Equal("2.0.1", resultPost.Headers.GetValues(ProtocolConstants.WorkerVersionHeaderName).Single());
+        Assert.Equal(PollingWorker.WorkerVersion, resultPost.Headers.GetValues(ProtocolConstants.WorkerVersionHeaderName).Single());
         Assert.True(resultPost.Headers.Contains(ProtocolConstants.WorkerCapabilitiesHeaderName));
         Assert.Equal(string.Empty, resultPost.Headers.GetValues(ProtocolConstants.WorkerCapabilitiesHeaderName).Single());
     }
