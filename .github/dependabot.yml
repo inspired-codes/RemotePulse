@@ -9,3 +9,7 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    # Major versions (e.g. .NET 11 packages) are a deliberate upgrade, not a routine bump.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
