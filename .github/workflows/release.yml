@@ -5,6 +5,7 @@
 #   gh attestation verify RemotePulse-Worker-windows-x64.zip --repo inspired-codes/RemotePulse
 #
 # Tag format: worker-v<Version>, matching <Version> in the Worker's .csproj (e.g. worker-v2.0.1).
+# Use an annotated tag: its subject line is the announcement the App and the portal show.
 name: Release
 
 on:
@@ -39,9 +40,21 @@ jobs:
       - name: Test
         run: dotnet test RemotePulse.slnx
 
+      # The annotated tag's subject line becomes the announcement in worker-version.json. Fetched
+      # explicitly, so the tag object is there even if checkout only fetched the commit.
+      - name: Read the tag message
+        run: |
+          git fetch --no-tags --depth=1 origin "+refs/tags/${TAG}:refs/tags/${TAG}"
+          if [ "$(git cat-file -t "refs/tags/${TAG}")" = "tag" ]; then
+            msg="$(git for-each-ref --format='%(contents:subject)' "refs/tags/${TAG}")"
+          else
+            msg=""
+          fi
+          { echo 'TAG_MESSAGE<<EOF_TAG_MESSAGE'; printf '%s\n' "$msg"; echo 'EOF_TAG_MESSAGE'; } >> "$GITHUB_ENV"
+
       - name: Package the Worker zips
         shell: pwsh
-        run: ./deploy/Package-WorkerRelease.ps1
+        run: ./deploy/Package-WorkerRelease.ps1 -Message $env:TAG_MESSAGE.Trim()
 
       # Free on public repositories only; a private repository would need GitHub Enterprise
       # Cloud, so the step is skipped while the repository is private.

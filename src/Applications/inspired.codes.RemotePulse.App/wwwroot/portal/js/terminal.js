@@ -30,21 +30,24 @@ export function initTerminalTabs() {
     snippetElement.textContent = snippets.powershell;
   }
 
-  // Dynamically update SHA-256 hashes on download cards from worker-version.json
+  // Show the SHA-256 of the zips this server actually serves (worker-version.json). There is no
+  // hardcoded fallback: a stale hash would be worse than none. If the file can't be read, point
+  // to the .sha256 file served next to each zip.
+  const showSha = (el, sha) => {
+    if (el) el.textContent = sha ? `SHA-256: ${sha}` : 'SHA-256: see the .zip.sha256 file next to the zip';
+  };
+  const winShaEl = document.getElementById('dlShaWindows');
+  const linShaEl = document.getElementById('dlShaLinux');
   fetch('/downloads/worker-version.json')
     .then(r => r.ok ? r.json() : null)
     .then(data => {
-      if (!data) return;
-      const winShaEl = document.getElementById('dlShaWindows');
-      const linShaEl = document.getElementById('dlShaLinux');
-      if (winShaEl && data.windowsSha256) {
-        winShaEl.textContent = `SHA-256: ${data.windowsSha256}`;
-      }
-      if (linShaEl && data.linuxSha256) {
-        linShaEl.textContent = `SHA-256: ${data.linuxSha256}`;
-      }
+      showSha(winShaEl, data && data.windowsSha256);
+      showSha(linShaEl, data && data.linuxSha256);
     })
-    .catch(() => {});
+    .catch(() => {
+      showSha(winShaEl, null);
+      showSha(linShaEl, null);
+    });
 
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {

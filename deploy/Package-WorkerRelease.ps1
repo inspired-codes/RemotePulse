@@ -130,7 +130,7 @@ $winHash = ($results | Where-Object { $_.Rid -eq "win-x64" }).Sha256
 $linuxHash = ($results | Where-Object { $_.Rid -eq "linux-x64" }).Sha256
 
 $announcementTitle = if ($Title) { $Title } else { "RemotePulse Worker v$workerVersion Released" }
-$announcementMsg = if ($Message) { $Message } else { "Auto .NET 10 prerequisite installation & fleet diagnostics are now live." }
+$announcementMsg = if ($Message) { $Message } else { "A new RemotePulse Worker version is available." }
 
 $versionData = [ordered]@{
     version = $workerVersion
