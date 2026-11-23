@@ -496,7 +496,7 @@ $svc.Status</pre>
             You never have to run <code>irm &hellip; | iex</code> blindly. On the <a href="/#install">home page</a>, you can read <a href="/get-worker.ps1"><code>get-worker.ps1</code></a> (137 lines of plain PowerShell) or switch to the <strong>Manual (Zip)</strong> tab to download the Windows or Linux Worker zip directly.
           </p>
           <p style="margin-top: 10px;">
-            Both this server&rsquo;s <code>/downloads/</code> folder and the <a href="https://github.com/inspired-codes/RemotePulse/releases" target="_blank" rel="noopener noreferrer">GitHub Releases page</a> serve the exact same Worker zips built on GitHub-hosted runners &mdash; never local workstation builds.
+            Our deploys copy the Worker zips unchanged from the <a href="https://github.com/inspired-codes/RemotePulse/releases" target="_blank" rel="noopener noreferrer">attested GitHub Release</a>. You don&rsquo;t have to take that on trust &mdash; verify any zip you download using the steps below.
           </p>
         </article>
       </div>
@@ -519,7 +519,7 @@ $svc.Status</pre>
         <article class="sec-card">
           <h3>2. Compare SHA-256 Against the GitHub Release</h3>
           <p>
-            Compute the SHA-256 of the downloaded zip locally and compare it to the digest listed on <a href="https://github.com/inspired-codes/RemotePulse/releases" target="_blank" rel="noopener noreferrer">GitHub Releases</a> (and to this server&rsquo;s <a href="/downloads/worker-version.json"><code>worker-version.json</code></a>):
+            Compute the SHA-256 of the downloaded zip locally and compare it to the digest listed on <a href="https://github.com/inspired-codes/RemotePulse/releases" target="_blank" rel="noopener noreferrer">GitHub Releases</a> (the independent reference &mdash; not just what this server tells you):
           </p>
           <div class="sec-console sec-console-inline">
 <pre># Windows (PowerShell)
@@ -565,7 +565,7 @@ sha256sum RemotePulse-Worker-linux-x64.zip</pre>
       </div>
 
       <div class="sec-roadmap-note">
-        <strong>What&rsquo;s done &amp; what&rsquo;s next:</strong> The source repository (<a href="https://github.com/inspired-codes/RemotePulse" target="_blank" rel="noopener noreferrer">inspired-codes/RemotePulse</a>) is now public, and every Worker release carries a signed GitHub build-provenance attestation served verbatim by this host. Next on the roadmap: <strong>signed Worker updates verified automatically against an offline release key</strong> (so the Worker itself checks authenticity on every update), plus a clean self-hosting bundle.
+        <strong>What&rsquo;s done &amp; what&rsquo;s next:</strong> The source repository (<a href="https://github.com/inspired-codes/RemotePulse" target="_blank" rel="noopener noreferrer">inspired-codes/RemotePulse</a>) is now public, and every Worker release carries a signed GitHub build-provenance attestation. Next on the roadmap: <strong>signed Worker updates verified automatically against an offline release key</strong>, so the Worker itself checks authenticity on every update.
       </div>
     </section>
 
