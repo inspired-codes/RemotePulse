@@ -237,6 +237,49 @@
       color: var(--text-secondary);
       line-height: 1.6;
     }
+    .sec-badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 22px;
+    }
+    .sec-oss-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 15px;
+      border-radius: var(--radius-full);
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-primary);
+      font-size: 13.5px;
+      font-weight: 600;
+      text-decoration: none;
+      box-shadow: var(--shadow-sm);
+      transition: border-color var(--transition-fast), color var(--transition-fast);
+    }
+    .sec-oss-pill:hover {
+      border-color: var(--accent-primary);
+      color: var(--accent-primary);
+    }
+    .sec-oss-pill-primary {
+      border-color: var(--emerald);
+    }
+    .sec-verify-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .sec-card a, .sec-roadmap-note a, .sec-faq-body a {
+      color: var(--accent-primary);
+      font-weight: 600;
+    }
+    .sec-console-inline {
+      margin-top: 12px;
+      padding: 12px 14px;
+    }
   </style>
 
   <!-- Synchronous inline theme check to prevent Flash of Unstyled Content (FOUC) -->
@@ -264,8 +307,9 @@
 
       <ul class="nav-links">
         <li><a href="/" class="nav-link">Home</a></li>
-        <li><a href="#overview" class="nav-link">Plain Summary</a></li>
+        <li><a href="#overview" class="nav-link">Summary</a></li>
         <li><a href="#technical" class="nav-link">How It Works</a></li>
+        <li><a href="#verify" class="nav-link">Verify</a></li>
         <li><a href="#limits" class="nav-link">Honest Limits</a></li>
         <li><a href="#faq" class="nav-link">Threat FAQ</a></li>
       </ul>
@@ -306,6 +350,20 @@
       </p>
       <div class="sec-highlight-quote">
         &ldquo;If anyone swaps a key on the way, pairing fails.&rdquo;
+      </div>
+      <div class="sec-badge-row" aria-label="Open source and verification links">
+        <a href="https://github.com/inspired-codes/RemotePulse" class="sec-oss-pill sec-oss-pill-primary" target="_blank" rel="noopener noreferrer">
+          <span>📖</span>
+          <span>Open Source on GitHub (AGPL-3.0)</span>
+        </a>
+        <a href="https://github.com/inspired-codes/RemotePulse/releases" class="sec-oss-pill" target="_blank" rel="noopener noreferrer">
+          <span>🔏</span>
+          <span>Attested Worker Releases</span>
+        </a>
+        <a href="#verify" class="sec-oss-pill">
+          <span>✅</span>
+          <span>Verify a Download Yourself</span>
+        </a>
       </div>
     </section>
 
@@ -409,15 +467,75 @@ $svc.Status</pre>
         </div>
       </div>
 
-      <div class="sec-card" style="margin-top: 20px;">
-        <h3>🔍 Inspect Before You Run</h3>
-        <p>
-          You do not have to run <code>irm &hellip; | iex</code> blindly. On the <a href="/#install" style="color: var(--accent-primary); font-weight: 600;">home page</a>, you can inspect <a href="/get-worker.ps1" style="color: var(--accent-primary); font-weight: 600;"><code>get-worker.ps1</code></a> (137 lines of plain PowerShell) or switch to the <strong>Manual (Zip)</strong> tab to download the Windows or Linux release zip and check its SHA-256 hash yourself before extracting.
-        </p>
+    </section>
+
+    <!-- Part 3: Open Source & Verify It Yourself -->
+    <section class="section" id="verify" style="padding-top: 10px;">
+      <div class="section-header">
+        <h2 class="section-title">Open Source &amp; Verify It Yourself</h2>
+        <p class="section-subtitle">Don&rsquo;t take our word for it &mdash; read the code and verify the exact Worker zip this server hands you against GitHub&rsquo;s signed build provenance.</p>
+      </div>
+
+      <div class="sec-verify-grid">
+        <article class="sec-card sec-card-ok">
+          <h3>📖 Audit the Open-Source Repository</h3>
+          <p>
+            The full source code for the Hub, Worker, Mobile App, and cryptography libraries is public under the <strong>AGPL-3.0</strong> license at <a href="https://github.com/inspired-codes/RemotePulse" target="_blank" rel="noopener noreferrer">github.com/inspired-codes/RemotePulse</a>.
+          </p>
+          <ul>
+            <li><a href="https://github.com/inspired-codes/RemotePulse/blob/main/docs/communication.md" target="_blank" rel="noopener noreferrer">Protocol &amp; wire format</a> (<code>docs/communication.md</code>)</li>
+            <li><a href="https://github.com/inspired-codes/RemotePulse/blob/main/docs/specs/pairing-v2-key-binding-spec.md" target="_blank" rel="noopener noreferrer">Pairing v2 key-binding specification</a></li>
+            <li><a href="https://github.com/inspired-codes/RemotePulse/blob/main/.github/workflows/release.yml" target="_blank" rel="noopener noreferrer">Public Release workflow</a> (<code>.github/workflows/release.yml</code>)</li>
+            <li><a href="https://github.com/inspired-codes/RemotePulse/blob/main/SECURITY.md" target="_blank" rel="noopener noreferrer">Security policy &amp; vulnerability reporting</a> (<code>SECURITY.md</code>)</li>
+          </ul>
+        </article>
+
+        <article class="sec-card">
+          <h3>🔍 Inspect Before You Run</h3>
+          <p>
+            You never have to run <code>irm &hellip; | iex</code> blindly. On the <a href="/#install">home page</a>, you can read <a href="/get-worker.ps1"><code>get-worker.ps1</code></a> (137 lines of plain PowerShell) or switch to the <strong>Manual (Zip)</strong> tab to download the Windows or Linux Worker zip directly.
+          </p>
+          <p style="margin-top: 10px;">
+            Both this server&rsquo;s <code>/downloads/</code> folder and the <a href="https://github.com/inspired-codes/RemotePulse/releases" target="_blank" rel="noopener noreferrer">GitHub Releases page</a> serve the exact same Worker zips built on GitHub-hosted runners &mdash; never local workstation builds.
+          </p>
+        </article>
+      </div>
+
+      <div class="sec-verify-grid">
+        <article class="sec-card">
+          <h3>1. Verify GitHub Build Provenance (SLSA)</h3>
+          <p>
+            Every public Worker release is built by GitHub Actions from a tagged commit with a signed Sigstore/SLSA build-provenance attestation. Using the <a href="https://cli.github.com/" target="_blank" rel="noopener noreferrer">GitHub CLI (<code>gh</code>)</a>, you can verify a zip downloaded from <strong>either</strong> GitHub Releases or this server:
+          </p>
+          <div class="sec-console sec-console-inline">
+<pre>gh attestation verify RemotePulse-Worker-windows-x64.zip \
+  --repo inspired-codes/RemotePulse</pre>
+          </div>
+          <p style="margin-top: 10px;">
+            For Linux, pass <code>RemotePulse-Worker-linux-x64.zip</code>. To pin the workflow and runner environment strictly, add <code>--signer-workflow inspired-codes/RemotePulse/.github/workflows/release.yml --deny-self-hosted-runners</code>.
+          </p>
+        </article>
+
+        <article class="sec-card">
+          <h3>2. Compare SHA-256 Against the GitHub Release</h3>
+          <p>
+            Compute the SHA-256 of the downloaded zip locally and compare it to the digest listed on <a href="https://github.com/inspired-codes/RemotePulse/releases" target="_blank" rel="noopener noreferrer">GitHub Releases</a> (and to this server&rsquo;s <a href="/downloads/worker-version.json"><code>worker-version.json</code></a>):
+          </p>
+          <div class="sec-console sec-console-inline">
+<pre># Windows (PowerShell)
+(Get-FileHash ./RemotePulse-Worker-windows-x64.zip -Algorithm SHA256).Hash
+
+# Linux / macOS
+sha256sum RemotePulse-Worker-linux-x64.zip</pre>
+          </div>
+          <p style="margin-top: 10px;">
+            If even one byte of the zip differs from the attested Release artifact, both the SHA-256 check and <code>gh attestation verify</code> fail.
+          </p>
+        </article>
       </div>
     </section>
 
-    <!-- Part 3: Threat Model & Honest Limits -->
+    <!-- Part 4: Threat Model & Honest Limits -->
     <section class="section" id="limits" style="padding-top: 10px;">
       <div class="section-header">
         <h2 class="section-title">Honest Security Limits</h2>
@@ -437,7 +555,8 @@ $svc.Status</pre>
         <article class="sec-card sec-card-warn">
           <h3>⚠️ What you still trust today</h3>
           <ul>
-            <li><strong>Code delivery from the same host:</strong> Today, the same server delivers the Web App (<code>/app</code>) and the Worker downloads (<code>/downloads/*</code>, <code>get-worker.ps1</code>). If that host were fully compromised at download time, it could serve modified software.</li>
+            <li><strong>Code delivery from the same host:</strong> The same server delivers the Web App (<code>/app</code>) and the Worker downloads (<code>/downloads/*</code>, <code>get-worker.ps1</code>). You can now verify any Worker zip yourself via <code>gh attestation verify</code> and GitHub Release hashes &mdash; but the Worker and installer do <strong>not</strong> enforce attestations or offline signatures automatically yet, and the Web App (PWA) and Hub container images are not attested yet.</li>
+            <li><strong>What build attestations do (and don&rsquo;t) prove:</strong> An attestation proves which public workflow built a Worker zip from which commit. It does not by itself prove the code is bug-free or benign &mdash; reading the open-source repository is what lets you audit it.</li>
             <li><strong>Physical QR visibility:</strong> Anyone who can see or photograph your PC&rsquo;s <code>http://localhost:7923/</code> screen during pairing holds the QR secret.</li>
             <li><strong>Pre-2.0.0 pairings:</strong> Machines paired before v2.0.0 stay on legacy TOFU pairing until you unpair and re-pair them.</li>
             <li><strong>Hub metadata:</strong> The Hub sees which <code>AppId</code> talks to which <code>MachineId</code>, when, payload sizes, and connection IP addresses (used for rate limiting, and included in support reports) &mdash; never script or output contents.</li>
@@ -446,11 +565,11 @@ $svc.Status</pre>
       </div>
 
       <div class="sec-roadmap-note">
-        <strong>Closing the delivery limit:</strong> Source repository publication (so anyone can audit the code and self-host the relay) is in preparation, and signed Worker updates verified against an offline release key are planned next. Open-source and self-host verification badges will be added once the repository is public.
+        <strong>What&rsquo;s done &amp; what&rsquo;s next:</strong> The source repository (<a href="https://github.com/inspired-codes/RemotePulse" target="_blank" rel="noopener noreferrer">inspired-codes/RemotePulse</a>) is now public, and every Worker release carries a signed GitHub build-provenance attestation served verbatim by this host. Next on the roadmap: <strong>signed Worker updates verified automatically against an offline release key</strong> (so the Worker itself checks authenticity on every update), plus a clean self-hosting bundle.
       </div>
     </section>
 
-    <!-- Part 4: Threat Model FAQ -->
+    <!-- Part 5: Threat Model FAQ -->
     <section class="section" id="faq" style="padding-top: 10px; padding-bottom: 48px;">
       <div class="section-header">
         <h2 class="section-title">Threat Model FAQ</h2>
@@ -461,7 +580,7 @@ $svc.Status</pre>
         <details class="sec-faq-item" open>
           <summary>What happens if the RemotePulse Hub server or database is hacked?</summary>
           <div class="sec-faq-body">
-            An attacker who dumps the Hub database gets encrypted payloads, public keys, machine IDs, and timing/size metadata. They <strong>cannot</strong> decrypt past or future scripts or command outputs, and they <strong>cannot</strong> send commands to an already-paired PC because your Worker requires your phone&rsquo;s ECDSA P-256 signature. Since v2.0.0, even a Hub compromised <em>while you pair</em> cannot swap keys. The remaining limit is software delivery: the same host currently serves the Web App and Worker downloads.
+            An attacker who dumps the Hub database gets encrypted payloads, public keys, machine IDs, and timing/size metadata. They <strong>cannot</strong> decrypt past or future scripts or command outputs, and they <strong>cannot</strong> send commands to an already-paired PC because your Worker requires your phone&rsquo;s ECDSA P-256 signature. Since v2.0.0, even a Hub compromised <em>while you pair</em> cannot swap keys. The remaining limit is software delivery: the same host serves the Web App and Worker downloads &mdash; you can <a href="#verify">verify any Worker zip against GitHub&rsquo;s signed build attestation</a> before installing it, while Web App (PWA) delivery and automatic update-signature checks are not yet enforced.
           </div>
         </details>
 
@@ -508,6 +627,7 @@ $svc.Status</pre>
         <li><a href="/#install">Quick Start</a></li>
         <li><a href="/security">Security</a></li>
         <li><a href="/app">Launch App</a></li>
+        <li><a href="https://github.com/inspired-codes/RemotePulse" target="_blank" rel="noopener noreferrer">GitHub</a></li>
         <li><a href="/#support">Feedback</a></li>
       </ul>
     </div>
