@@ -132,7 +132,20 @@ public static class HybridCrypto
         Buffer.BlockCopy(rawEphemeralKey, 1, ecParams.Q.X, 0, 32);
         Buffer.BlockCopy(rawEphemeralKey, 33, ecParams.Q.Y, 0, 32);
 
-        using var ephemeralEcdh = ECDiffieHellman.Create(ecParams);
+        // A tampered point that isn't on the curve must fail the same way on every OS. OpenSSL
+        // (Linux) throws CryptographicException, but Windows CNG throws
+        // PlatformNotSupportedException (seen in CI), which callers that catch
+        // CryptographicException to reject a bad envelope would not handle.
+        ECDiffieHellman ephemeralEcdhCandidate;
+        try
+        {
+            ephemeralEcdhCandidate = ECDiffieHellman.Create(ecParams);
+        }
+        catch (Exception ex) when (ex is PlatformNotSupportedException or ArgumentException)
+        {
+            throw new CryptographicException("Invalid ephemeral public key.", ex);
+        }
+        using var ephemeralEcdh = ephemeralEcdhCandidate;
 
         byte[] sharedSecret = recipientEcdh.DeriveRawSecretAgreement(ephemeralEcdh.PublicKey);
         byte[] aesKey;
